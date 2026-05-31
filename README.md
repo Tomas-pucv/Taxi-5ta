@@ -24,4 +24,8 @@ MapTiler: Servicio de mapas y teselas utilizado como proveedor cartográfico.
 - Controles de zoom.
 - Indicador visual del estado de seguimiento de ubicación.
 
+## Descargas
+
+Obtener la última versión del apk en la sección [releases](https://github.com/Tomas-pucv/Taxi-5ta/releases)
+
 Proyecto en desarrollo académico con enfoque en la implementación de tecnologías de geolocalización aplicadas al transporte urbano.
