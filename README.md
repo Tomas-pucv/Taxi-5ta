@@ -23,6 +23,5 @@ MapTiler: Servicio de mapas y teselas utilizado como proveedor cartográfico.
 - Botón para recentrar el mapa en la ubicación actual.
 - Controles de zoom.
 - Indicador visual del estado de seguimiento de ubicación.
-- Estado del proyecto
 
 Proyecto en desarrollo académico con enfoque en la implementación de tecnologías de geolocalización aplicadas al transporte urbano.
