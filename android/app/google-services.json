@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "592350788744",
+    "firebase_url": "https://coletotal-32735-default-rtdb.firebaseio.com",
+    "project_id": "coletotal-32735",
+    "storage_bucket": "coletotal-32735.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:592350788744:android:be23bf46df07b83f2cf33d",
+        "android_client_info": {
+          "package_name": "com.example.taxi1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0BH82EqVl88FEn2AyiT3ACaev--VPo6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

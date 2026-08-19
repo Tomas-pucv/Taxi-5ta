@@ -8,6 +8,9 @@ import 'package:taxi1/l10n/app_localizations.dart';
 import 'package:taxi1/services/preferences_service.dart';
 import 'package:taxi1/models/bus_stop.dart';
 import 'package:taxi1/services/route_service.dart';
+import 'package:taxi1/models/colectivo_activo.dart';
+import 'package:taxi1/services/mock_telemetria_service.dart';
+import 'package:taxi1/services/firebase_telemetria_service.dart';
 
 String _routeErrorMessage(String errorCode, AppLocalizations l10n) {
   return switch (errorCode) {
@@ -40,6 +43,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    MockTelemetriaService.instance.iniciarSimulacion();
+    FirebaseTelemetriaService.instance.iniciarTrackingReal();
     _mapController = AnimatedMapController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -61,6 +66,8 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    MockTelemetriaService.instance.detenerSimulacion();
+    FirebaseTelemetriaService.instance.detenerTrackingReal();
     prefs.removeListener(_onPrefsChanged);
     routeService.removeListener(_onRouteChanged);
     _centerBtnController.dispose();
@@ -217,7 +224,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
               TileLayer(
                 urlTemplate: prefs.mapType == 'satellite'
                     ? 'https://api.maptiler.com/maps/hybrid/{z}/{x}/{y}.jpg?key=twZDa0L757dpVwBfAbBr'
-                    : 'https://api.maptiler.com/maps/streets-v4/{z}/{x}/{y}.png?key=twZDa0L757dpVwBfAbBr',
+                    : 'https://api.maptiler.com/maps/basic-v2/{z}/{x}/{y}.png?key=twZDa0L757dpVwBfAbBr',
               ),
 
               // Polilínea de la ruta real.
@@ -251,6 +258,70 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                     ),
                   ],
                 ),
+
+              // Colectivos Activos (Mock Telemetría)
+              StreamBuilder<List<ColectivoActivo>>(
+                stream: MockTelemetriaService.instance.telemetriaStream,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox.shrink();
+                  return MarkerLayer(
+                    markers: snapshot.data!.map((colectivo) {
+                      return Marker(
+                        point: LatLng(colectivo.latitud, colectivo.longitud),
+                        width: 40,
+                        height: 40,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black87,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.directions_car, color: Colors.white, size: 20),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+
+              // Colectivos Reales (Firebase Telemetría)
+              StreamBuilder<List<ColectivoActivo>>(
+                stream: FirebaseTelemetriaService.instance.telemetriaStream,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox.shrink();
+                  return MarkerLayer(
+                    markers: snapshot.data!.map((colectivo) {
+                      return Marker(
+                        point: LatLng(colectivo.latitud, colectivo.longitud),
+                        width: 40,
+                        height: 40,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade800,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.directions_car, color: Colors.white, size: 20),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
 
               // Marcador del usuario.
               if (origin != null)

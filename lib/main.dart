@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:taxi1/l10n/app_localizations.dart';
@@ -8,9 +11,14 @@ import 'package:taxi1/services/preferences_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   // Inicializa Firebase (descomenta la línea de abajo cuando tengas el
   // google-services.json configurado):
   // await Firebase.initializeApp();
+  
 
   await PreferencesService.instance.load();
   runApp(const ColeTotalApp());
