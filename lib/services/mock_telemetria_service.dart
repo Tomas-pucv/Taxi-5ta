@@ -56,8 +56,5 @@ class MockTelemetriaService {
 
   void detenerSimulacion() {
     _timer?.cancel();
-    if (!_streamController.isClosed) {
-      _streamController.close();
-    }
   }
 }

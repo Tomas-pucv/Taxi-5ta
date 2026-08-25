@@ -87,6 +87,28 @@ class _PreferencesScreenState extends State<PreferencesScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Modo de Usuario (Chofer vs Pasajero)
+              _buildSectionCard(
+                icon: Icons.badge_outlined,
+                title: 'Modo de Usuario',
+                children: [
+                  _buildRadioOption(
+                    'Pasajero (Ubicación privada y local)',
+                    'pasajero',
+                    prefs.userRole,
+                    (v) => prefs.setUserRole(v!),
+                  ),
+                  _buildDivider(),
+                  _buildRadioOption(
+                    'Chofer / Conductor (Transmisión en vivo)',
+                    'chofer',
+                    prefs.userRole,
+                    (v) => prefs.setUserRole(v!),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
               // Mapa
               _buildSectionCard(
                 icon: Icons.map_outlined,

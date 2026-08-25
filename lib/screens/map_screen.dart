@@ -9,7 +9,6 @@ import 'package:taxi1/services/preferences_service.dart';
 import 'package:taxi1/models/bus_stop.dart';
 import 'package:taxi1/services/route_service.dart';
 import 'package:taxi1/models/colectivo_activo.dart';
-import 'package:taxi1/services/mock_telemetria_service.dart';
 import 'package:taxi1/services/firebase_telemetria_service.dart';
 
 String _routeErrorMessage(String errorCode, AppLocalizations l10n) {
@@ -43,8 +42,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    MockTelemetriaService.instance.iniciarSimulacion();
-    FirebaseTelemetriaService.instance.iniciarTrackingReal();
+    _updateTrackingState();
     _mapController = AnimatedMapController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -66,7 +64,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    MockTelemetriaService.instance.detenerSimulacion();
     FirebaseTelemetriaService.instance.detenerTrackingReal();
     prefs.removeListener(_onPrefsChanged);
     routeService.removeListener(_onRouteChanged);
@@ -77,6 +74,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   void _onPrefsChanged() {
+    _updateTrackingState();
     final tracking = prefs.locationTracking;
     if (!tracking) {
       _positionStream?.cancel();
@@ -84,6 +82,14 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
       if (mounted) setState(() => _followUser = false);
     }
     if (mounted) setState(() {});
+  }
+
+  void _updateTrackingState() {
+    if (prefs.isChofer && prefs.locationTracking) {
+      FirebaseTelemetriaService.instance.iniciarTrackingReal(prefs.driverId);
+    } else {
+      FirebaseTelemetriaService.instance.detenerTrackingReal();
+    }
   }
 
   void _onRouteChanged() {
@@ -245,12 +251,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   ],
                 ),
 
-              // Halo de precisión alrededor del usuario.
-              if (origin != null)
+              // Halo de precisión alrededor del usuario pasajero (local y privado)
+              if (_currentPosition != null && !prefs.isChofer)
                 CircleLayer(
                   circles: [
                     CircleMarker(
-                      point: origin,
+                      point: _currentPosition!,
                       radius: 50,
                       color: scheme.primary.withValues(alpha: 0.15),
                       borderColor: scheme.primary.withValues(alpha: 0.5),
@@ -259,63 +265,39 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                   ],
                 ),
 
-              // Colectivos Activos (Mock Telemetría)
-              StreamBuilder<List<ColectivoActivo>>(
-                stream: MockTelemetriaService.instance.telemetriaStream,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const SizedBox.shrink();
-                  return MarkerLayer(
-                    markers: snapshot.data!.map((colectivo) {
-                      return Marker(
-                        point: LatLng(colectivo.latitud, colectivo.longitud),
-                        width: 40,
-                        height: 40,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black87,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(Icons.directions_car, color: Colors.white, size: 20),
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
-
-              // Colectivos Reales (Firebase Telemetría)
+              // Colectivos / Choferes Reales (Firebase Telemetría en Vivo)
               StreamBuilder<List<ColectivoActivo>>(
                 stream: FirebaseTelemetriaService.instance.telemetriaStream,
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return const SizedBox.shrink();
                   return MarkerLayer(
                     markers: snapshot.data!.map((colectivo) {
+                      final isMe = prefs.isChofer && colectivo.idVehiculo == prefs.driverId;
                       return Marker(
                         point: LatLng(colectivo.latitud, colectivo.longitud),
-                        width: 40,
-                        height: 40,
+                        width: isMe ? 46 : 40,
+                        height: isMe ? 46 : 40,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.blue.shade800,
+                            color: isMe ? Colors.blue.shade900 : Colors.blue.shade700,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            border: Border.all(
+                              color: isMe ? Colors.amberAccent : Colors.white,
+                              width: isMe ? 3 : 2,
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 4,
+                                color: Colors.black.withValues(alpha: 0.35),
+                                blurRadius: 6,
                                 offset: const Offset(0, 2),
                               ),
                             ],
                           ),
-                          child: const Icon(Icons.directions_car, color: Colors.white, size: 20),
+                          child: Icon(
+                            Icons.directions_car,
+                            color: isMe ? Colors.amberAccent : Colors.white,
+                            size: isMe ? 24 : 20,
+                          ),
                         ),
                       );
                     }).toList(),
@@ -323,12 +305,12 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 },
               ),
 
-              // Marcador del usuario.
-              if (origin != null)
+              // Marcador del Pasajero (Punto azul clásico personal)
+              if (_currentPosition != null && !prefs.isChofer)
                 MarkerLayer(
                   markers: [
                     Marker(
-                      point: origin,
+                      point: _currentPosition!,
                       width: 24,
                       height: 24,
                       child: Container(

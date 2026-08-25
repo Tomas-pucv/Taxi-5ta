@@ -14,6 +14,8 @@ class PreferencesService extends ChangeNotifier {
   static const _keyFontSize = 'font_size';
   static const _keyDensity = 'compact_mode';
   static const _keyAnimations = 'animations_enabled';
+  static const _keyUserRole = 'user_role'; // 'pasajero' | 'chofer'
+  static const _keyDriverId = 'driver_id';
 
   // Mapa
   String _mapType = 'normal';
@@ -28,6 +30,10 @@ class PreferencesService extends ChangeNotifier {
   bool _notificationsEnabled = true;
   bool _locationTracking = true;
   bool _historyEnabled = true;
+
+  // Rol de usuario
+  String _userRole = 'pasajero';
+  String _driverId = '';
 
   bool _initialized = false;
 
@@ -46,6 +52,11 @@ class PreferencesService extends ChangeNotifier {
   bool get locationTracking => _locationTracking;
   bool get historyEnabled => _historyEnabled;
 
+  // Getters - Rol
+  String get userRole => _userRole;
+  bool get isChofer => _userRole == 'chofer';
+  String get driverId => _driverId;
+
   bool get isInitialized => _initialized;
 
   Future<void> load() async {
@@ -60,8 +71,24 @@ class PreferencesService extends ChangeNotifier {
     _fontSizeMultiplier = prefs.getDouble(_keyFontSize) ?? 1.0;
     _compactMode = prefs.getBool(_keyDensity) ?? false;
     _animationsEnabled = prefs.getBool(_keyAnimations) ?? true;
+    _userRole = prefs.getString(_keyUserRole) ?? 'pasajero';
+    _driverId = prefs.getString(_keyDriverId) ?? '';
+
+    if (_driverId.isEmpty) {
+      _driverId = 'chofer_${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}';
+      await prefs.setString(_keyDriverId, _driverId);
+    }
 
     _initialized = true;
+    notifyListeners();
+  }
+
+  // Setters - Rol
+  Future<void> setUserRole(String value) async {
+    if (value == _userRole) return;
+    _userRole = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyUserRole, value);
     notifyListeners();
   }
 
