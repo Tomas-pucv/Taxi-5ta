@@ -14,6 +14,7 @@ import 'package:taxi1/theme/breakpoints.dart';
 import 'package:taxi1/utils/distance_format.dart';
 import 'package:taxi1/utils/route_error.dart';
 import 'package:taxi1/widgets/metric_chip.dart';
+import 'package:taxi1/widgets/paradero_sheet.dart';
 import 'package:taxi1/widgets/settings_section.dart';
 import 'package:taxi1/widgets/state_views.dart';
 
@@ -25,6 +26,12 @@ enum _LocationState {
   permissionDenied,
   failed,
 }
+
+/// Cómo se ordena la lista de paraderos.
+///
+/// Las dos maneras en que alguien busca un paradero: el que tiene al lado, o
+/// el que usa siempre.
+enum _SortMode { cercanos, recientes }
 
 class RoutesScreen extends StatefulWidget {
   const RoutesScreen({super.key});
@@ -39,6 +46,7 @@ class _RoutesScreenState extends State<RoutesScreen> {
   bool _fetchingRoute = false;
   List<BusStop> _sortedStops = [];
   String _searchQuery = '';
+  _SortMode _sortMode = _SortMode.cercanos;
 
   final routeService = RouteService.instance;
   final history = StopHistoryService.instance;
@@ -191,10 +199,18 @@ class _RoutesScreenState extends State<RoutesScreen> {
     }
   }
 
+  /// La lista según el orden elegido, ya filtrada por el buscador.
+  ///
+  /// Buscar por texto ignora el modo a propósito: si el usuario escribe un
+  /// nombre, quiere ese paradero, no los que ha visitado antes.
   List<BusStop> get _filteredStops {
-    if (_searchQuery.isEmpty) return _sortedStops;
+    final base = _sortMode == _SortMode.recientes && _searchQuery.isEmpty
+        ? history.recentStops
+        : _sortedStops;
+
+    if (_searchQuery.isEmpty) return base;
     final q = _searchQuery.toLowerCase();
-    return _sortedStops
+    return base
         .where(
           (s) =>
               s.name.toLowerCase().contains(q) ||
@@ -211,7 +227,6 @@ class _RoutesScreenState extends State<RoutesScreen> {
     final l10n = AppLocalizations.of(context)!;
     final stops = _filteredStops;
     final searching = _searchQuery.isNotEmpty;
-    final recents = history.recentStops;
 
     return Scaffold(
       body: Center(
@@ -266,27 +281,33 @@ class _RoutesScreenState extends State<RoutesScreen> {
                     else if (stops.isEmpty)
                       SliverFillRemaining(
                         hasScrollBody: false,
-                        child: StatusMessageView(
-                          icon: Icons.search_off,
-                          title: l10n.noResults(_searchQuery),
-                          message: l10n.noResultsHint,
-                        ),
+                        // "Sin resultados para ''" no significaba nada cuando la
+                        // lista está vacía por estar en modo Recientes y no por
+                        // una búsqueda.
+                        child: searching
+                            ? StatusMessageView(
+                                icon: Icons.search_off,
+                                title: l10n.noResults(_searchQuery),
+                                message: l10n.noResultsHint,
+                              )
+                            : StatusMessageView(
+                                icon: Icons.history,
+                                title: l10n.sortRecentEmpty,
+                                actionLabel: l10n.sortNearest,
+                                onAction: () => setState(
+                                  () => _sortMode = _SortMode.cercanos,
+                                ),
+                              ),
                       )
                     else ...[
-                      // El historial solo tiene sentido al explorar; durante
-                      // una búsqueda activa estorbaría los resultados.
-                      if (recents.isNotEmpty && !searching) ...[
-                        SliverToBoxAdapter(
-                          child: _recentsSection(l10n, recents),
-                        ),
-                        const SliverToBoxAdapter(
-                          child: SizedBox(height: AppSpacing.xl),
-                        ),
-                      ],
                       SliverToBoxAdapter(
                         child: SettingsSection(
                           icon: Icons.directions_bus_outlined,
-                          title: searching ? l10n.whereToGo : l10n.allStops,
+                          title: switch ((searching, _sortMode)) {
+                            (true, _) => l10n.whereToGo,
+                            (false, _SortMode.recientes) => l10n.recentStops,
+                            (false, _SortMode.cercanos) => l10n.allStops,
+                          },
                           children: const [],
                         ),
                       ),
@@ -306,7 +327,10 @@ class _RoutesScreenState extends State<RoutesScreen> {
                             return _StopTile(
                               stop: stop,
                               meters: _metersTo(stop),
-                              onTap: () => _selectStop(stop),
+                              // Ya no se calcula la ruta a pie al tocar: primero
+                              // se muestra qué colectivos pasan por el paradero,
+                              // que es la pregunta real, y desde ahí se elige.
+                              onTap: () => showParaderoSheet(context, stop),
                               showLoading:
                                   _fetchingRoute &&
                                   routeService.destination == stop,
@@ -372,33 +396,31 @@ class _RoutesScreenState extends State<RoutesScreen> {
             ),
             onChanged: (value) => setState(() => _searchQuery = value),
           ),
+
+          // Con una búsqueda activa el orden no se aplica (manda el texto), así
+          // que mostrar el selector sugeriría un control que no hace nada.
+          if (_searchQuery.isEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            SegmentedButton<_SortMode>(
+              showSelectedIcon: false,
+              selected: {_sortMode},
+              onSelectionChanged: (s) => setState(() => _sortMode = s.first),
+              segments: [
+                ButtonSegment(
+                  value: _SortMode.cercanos,
+                  icon: const Icon(Icons.near_me_outlined, size: 18),
+                  label: Text(l10n.sortNearest),
+                ),
+                ButtonSegment(
+                  value: _SortMode.recientes,
+                  icon: const Icon(Icons.history, size: 18),
+                  label: Text(l10n.sortRecent),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
-    );
-  }
-
-  /// Paraderos consultados recientemente, como chips de acceso rápido.
-  Widget _recentsSection(AppLocalizations l10n, List<BusStop> recents) {
-    return SettingsSection(
-      icon: Icons.history,
-      title: l10n.recentStops,
-      children: [
-        Padding(
-          padding: AppSpacing.pageHorizontal,
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final stop in recents)
-                ActionChip(
-                  avatar: const Icon(Icons.history, size: 18),
-                  label: Text(stop.name),
-                  onPressed: _fetchingRoute ? null : () => _selectStop(stop),
-                ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

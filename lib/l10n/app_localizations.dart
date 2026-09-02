@@ -109,7 +109,7 @@ abstract class AppLocalizations {
   /// No description provided for @navRoutes.
   ///
   /// In es, this message translates to:
-  /// **'Rutas'**
+  /// **'Paraderos'**
   String get navRoutes;
 
   /// No description provided for @navPreferences.
@@ -667,7 +667,7 @@ abstract class AppLocalizations {
   /// No description provided for @navStops.
   ///
   /// In es, this message translates to:
-  /// **'Paraderos'**
+  /// **'Gestión de paraderos'**
   String get navStops;
 
   /// No description provided for @navRecorridos.
@@ -1521,6 +1521,168 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Puedes iniciar sesión cuando quieras desde el menú lateral.'**
   String get welcomeChangeLater;
+
+  /// No description provided for @sortLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Ordenar'**
+  String get sortLabel;
+
+  /// No description provided for @sortNearest.
+  ///
+  /// In es, this message translates to:
+  /// **'Cercanos'**
+  String get sortNearest;
+
+  /// No description provided for @sortRecent.
+  ///
+  /// In es, this message translates to:
+  /// **'Recientes'**
+  String get sortRecent;
+
+  /// No description provided for @sortRecentEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no has consultado ningún paradero.'**
+  String get sortRecentEmpty;
+
+  /// No description provided for @stopLinesTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Colectivos que pasan por aquí'**
+  String get stopLinesTitle;
+
+  /// No description provided for @stopLinesEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay colectivos asignados a este paradero.'**
+  String get stopLinesEmpty;
+
+  /// No description provided for @stopLinesEmptyHint.
+  ///
+  /// In es, this message translates to:
+  /// **'La garita aún no ha cargado sus recorridos.'**
+  String get stopLinesEmptyHint;
+
+  /// No description provided for @stopWalkHere.
+  ///
+  /// In es, this message translates to:
+  /// **'Cómo llegar'**
+  String get stopWalkHere;
+
+  /// No description provided for @stopSeeRoute.
+  ///
+  /// In es, this message translates to:
+  /// **'Ver recorrido'**
+  String get stopSeeRoute;
+
+  /// No description provided for @lineOnMap.
+  ///
+  /// In es, this message translates to:
+  /// **'Recorrido de {nombre}'**
+  String lineOnMap(String nombre);
+
+  /// No description provided for @clearLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Quitar recorrido'**
+  String get clearLine;
+
+  /// No description provided for @loadingLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Trazando el recorrido…'**
+  String get loadingLine;
+
+  /// No description provided for @searchAddressHint.
+  ///
+  /// In es, this message translates to:
+  /// **'¿A qué dirección vas?'**
+  String get searchAddressHint;
+
+  /// No description provided for @searchNoResults.
+  ///
+  /// In es, this message translates to:
+  /// **'No se encontró esa dirección.'**
+  String get searchNoResults;
+
+  /// No description provided for @searchSearching.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscando…'**
+  String get searchSearching;
+
+  /// No description provided for @searchClear.
+  ///
+  /// In es, this message translates to:
+  /// **'Limpiar'**
+  String get searchClear;
+
+  /// No description provided for @destinationLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Destino'**
+  String get destinationLabel;
+
+  /// No description provided for @suggestTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mejores paraderos para tu destino'**
+  String get suggestTitle;
+
+  /// No description provided for @suggestSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ordenados por lo que caminas en total'**
+  String get suggestSubtitle;
+
+  /// No description provided for @suggestWalkToStop.
+  ///
+  /// In es, this message translates to:
+  /// **'{d} hasta el paradero'**
+  String suggestWalkToStop(String d);
+
+  /// No description provided for @suggestWalkFromStop.
+  ///
+  /// In es, this message translates to:
+  /// **'{d} desde la bajada'**
+  String suggestWalkFromStop(String d);
+
+  /// No description provided for @suggestTakeLine.
+  ///
+  /// In es, this message translates to:
+  /// **'Toma {linea}'**
+  String suggestTakeLine(String linea);
+
+  /// No description provided for @suggestGetOff.
+  ///
+  /// In es, this message translates to:
+  /// **'Bájate en {paradero}'**
+  String suggestGetOff(String paradero);
+
+  /// No description provided for @suggestTotal.
+  ///
+  /// In es, this message translates to:
+  /// **'{d} a pie en total'**
+  String suggestTotal(String d);
+
+  /// No description provided for @suggestNoRoutes.
+  ///
+  /// In es, this message translates to:
+  /// **'La garita todavía no ha cargado sus recorridos, así que estos paraderos se ordenan sólo por cercanía.'**
+  String get suggestNoRoutes;
+
+  /// No description provided for @suggestEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'No hay paraderos que sirvan para ese destino.'**
+  String get suggestEmpty;
+
+  /// No description provided for @suggestLocationNeeded.
+  ///
+  /// In es, this message translates to:
+  /// **'Necesitamos tu ubicación para recomendarte un paradero.'**
+  String get suggestLocationNeeded;
 }
 
 class _AppLocalizationsDelegate

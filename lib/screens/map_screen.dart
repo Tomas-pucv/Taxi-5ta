@@ -13,18 +13,23 @@ import 'package:taxi1/models/colectivo_activo.dart';
 import 'package:taxi1/screens/main_screen.dart';
 import 'package:taxi1/services/auth_service.dart';
 import 'package:taxi1/services/firebase_telemetria_service.dart';
+import 'package:taxi1/services/geocoding_service.dart';
 import 'package:taxi1/services/preferences_service.dart';
+import 'package:taxi1/services/recorridos_service.dart';
 import 'package:taxi1/services/route_service.dart';
 import 'package:taxi1/services/stop_history_service.dart';
+import 'package:taxi1/services/stop_planner.dart';
 import 'package:taxi1/services/stops_service.dart';
 import 'package:taxi1/theme/app_colors.dart';
 import 'package:taxi1/theme/app_spacing.dart';
 import 'package:taxi1/utils/distance_format.dart';
-import 'package:taxi1/utils/route_error.dart';
 import 'package:taxi1/widgets/map_overlay_card.dart';
+import 'package:taxi1/widgets/map_search_bar.dart';
 import 'package:taxi1/widgets/map_style_sheet.dart';
 import 'package:taxi1/widgets/metric_chip.dart';
+import 'package:taxi1/widgets/paradero_sheet.dart';
 import 'package:taxi1/widgets/state_views.dart';
+import 'package:taxi1/widgets/stop_suggestions_sheet.dart';
 
 /// Motivo por el que no hay posición del usuario.
 enum _LocationIssue { none, disabledByPreference, serviceDisabled, denied }
@@ -54,6 +59,11 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   final prefs = PreferencesService.instance;
   final auth = AuthService.instance;
   final stopsService = StopsService.instance;
+  final recorridos = RecorridosService.instance;
+
+  /// Dirección buscada por el usuario, si la hay. Es el destino *final* del
+  /// viaje, distinto del paradero (que es sólo dónde se toma el colectivo).
+  PlaceResult? _destino;
 
   late final AnimationController _centerBtnController;
   late final Animation<double> _centerScale;
@@ -76,6 +86,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     // Los paraderos ahora son datos vivos: si el administrador agrega uno, el
     // mapa del pasajero tiene que mostrarlo sin reiniciar la app.
     stopsService.addListener(_onRouteChanged);
+    recorridos.addListener(_onRouteChanged);
 
     _centerBtnController = AnimationController(
       vsync: this,
@@ -117,6 +128,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     routeService.removeListener(_onRouteChanged);
     auth.removeListener(_onRouteChanged);
     stopsService.removeListener(_onRouteChanged);
+    recorridos.removeListener(_onRouteChanged);
     _centerBtnController.dispose();
     _positionStream?.cancel();
     _telemetriaStream?.cancel();
@@ -142,6 +154,59 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
 
   void _onRouteChanged() {
     if (mounted) setState(() {});
+  }
+
+  /// El usuario eligió una dirección en el buscador.
+  ///
+  /// A partir de ahí la app no pregunta "¿qué paradero quieres?", sino que lo
+  /// propone: cruza la posición del usuario con los recorridos de la garita y
+  /// ordena los paraderos por lo que hay que caminar en total (ver
+  /// [StopPlanner]).
+  Future<void> _onDestinationSelected(PlaceResult place) async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _destino = place);
+
+    // Encuadrar destino y usuario juntos da contexto antes de abrir la hoja.
+    _mapController.centerOnPoint(place.location, zoom: 15);
+    setState(() => _followUser = false);
+
+    final origin = _currentPosition ?? routeService.origin;
+    if (origin == null) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(l10n.suggestLocationNeeded)));
+      return;
+    }
+
+    final sugerencias = StopPlanner.suggest(
+      user: origin,
+      destino: place.location,
+    );
+
+    if (!mounted) return;
+    final elegido = await showStopSuggestionsSheet(
+      context,
+      destino: place.name,
+      suggestions: sugerencias,
+    );
+    if (elegido == null || !mounted) return;
+
+    // El paradero elegido pasa a ser el destino de la ruta a pie, y su línea
+    // se dibuja para que se vea a dónde lleva.
+    recorridos.clearSelection();
+    routeService.setOrigin(origin);
+    routeService.setDestination(elegido.stop);
+    StopHistoryService.instance.record(elegido.stop);
+    await routeService.fetchRoute(origin, elegido.stop);
+
+    final linea = elegido.recorrido;
+    if (linea != null && mounted) await recorridos.select(linea);
+  }
+
+  void _clearDestino() {
+    setState(() => _destino = null);
+    routeService.clearDestination();
+    recorridos.clearSelection();
   }
 
   Future<void> _initLocationTracking() async {
@@ -242,33 +307,19 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   Future<void> _reorient() => _mapController.animatedRotateReset();
 
   /// Toca un paradero del mapa: setea destino y pide la ruta.
+  /// Tocar un paradero abre su ficha, igual que en la pestaña Paraderos.
+  ///
+  /// Antes calculaba directo la ruta a pie. Ahora los dos sitios desde los que
+  /// se toca un paradero llevan a la misma pregunta —qué colectivos pasan por
+  /// aquí—, y desde ahí se elige ver una línea o cómo llegar caminando.
   Future<void> _onTapStop(BusStop stop) async {
-    routeService.setDestination(stop);
-    final origin = routeService.origin ?? _currentPosition;
-    if (origin == null) {
-      if (!mounted) return;
-      final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l10n.locationUnavailable)));
-      return;
-    }
-
-    final ok = await routeService.fetchRoute(origin, stop);
-    if (!mounted) return;
-
-    // Alimenta "Consultados recientemente" en la pestaña Rutas. Respeta la
-    // preferencia de historial: el propio servicio ignora la llamada si está
-    // desactivada.
-    if (ok) StopHistoryService.instance.record(stop);
-
+    // Se registra en el historial al consultarlo, no sólo al rutear: abrir la
+    // ficha ya es interactuar con el paradero, que es lo que ordena la lista
+    // en modo "Recientes".
+    StopHistoryService.instance.record(stop);
     await _mapController.centerOnPoint(stop.location, zoom: 16.0);
-    if (!mounted || ok) return;
-
-    final l10n = AppLocalizations.of(context)!;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(routeErrorMessage(routeService.lastError, l10n))),
-    );
+    if (!mounted) return;
+    await showParaderoSheet(context, stop);
   }
 
   Color _stopColor(BusStop stop, AppStatusColors status) {
@@ -325,6 +376,24 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                 retinaMode: RetinaMode.isHighDensity(context),
               ),
 
+              // Recorrido de una línea de colectivos. Va debajo de la ruta a
+              // pie: es contexto ("por aquí pasa la 5"), no la indicación que
+              // el usuario tiene que seguir ahora.
+              if (recorridos.trazadoSeleccionado.length > 1)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: recorridos.trazadoSeleccionado,
+                      strokeWidth: 6.0,
+                      color: Color(
+                        recorridos.selected!.colorValue,
+                      ).withValues(alpha: 0.85),
+                      borderColor: status.routeLineCasing,
+                      borderStrokeWidth: 1.5,
+                    ),
+                  ],
+                ),
+
               // La ruta va antes que los marcadores para que no los tape.
               if (destination != null &&
                   origin != null &&
@@ -339,6 +408,31 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
                       color: status.routeLine,
                       borderColor: status.routeLineCasing,
                       borderStrokeWidth: 1.5,
+                    ),
+                  ],
+                ),
+
+              // Bandera del destino final buscado. No es un paradero: es la
+              // dirección a la que el usuario quiere llegar caminando después
+              // de bajarse.
+              if (_destino case final destino?)
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: destino.location,
+                      width: AppSpacing.minTapTarget,
+                      height: AppSpacing.minTapTarget,
+                      child: Tooltip(
+                        message: destino.name,
+                        child: Icon(
+                          Icons.flag,
+                          size: 34,
+                          color: Theme.of(context).colorScheme.primary,
+                          shadows: const [
+                            Shadow(color: Color(0x80000000), blurRadius: 6),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -515,23 +609,84 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
   }
 
   Widget _topOverlays(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Primera fila: menú y buscador de direcciones, al estilo de cualquier
+        // app de mapas. El buscador va arriba del todo porque es el punto de
+        // partida real del pasajero: sabe a dónde va, no qué paradero tomar.
+        Row(
+          children: [
+            // El mapa no tiene AppBar (la cartografía ocupa la pantalla
+            // entera), así que el acceso al menú es este botón flotante. Va
+            // arriba a la izquierda, donde estaría el de una AppBar.
+            FloatingActionButton.small(
+              heroTag: 'menu',
+              tooltip: l10n.openMenu,
+              onPressed: MainNavigationController.instance.openDrawer,
+              child: const Icon(Icons.menu),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: MapSearchBar(
+                onSelected: _onDestinationSelected,
+                destinationLabel: _destino?.name,
+                onCleared: _clearDestino,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _secondaryOverlays(l10n),
+      ],
+    );
+  }
+
+  Widget _secondaryOverlays(AppLocalizations l10n) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // El mapa no tiene AppBar (la cartografía ocupa la pantalla entera),
-        // así que el acceso al menú es este botón flotante. Va arriba a la
-        // izquierda, donde estaría el de una AppBar.
-        FloatingActionButton.small(
-          heroTag: 'menu',
-          tooltip: l10n.openMenu,
-          onPressed: MainNavigationController.instance.openDrawer,
-          child: const Icon(Icons.menu),
-        ),
-        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Qué línea se está viendo dibujada, con su color y una X.
+              if (recorridos.selected case final linea?) ...[
+                MapOverlayCard(
+                  child: Row(
+                    children: [
+                      if (recorridos.loadingTrazado)
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      else
+                        Icon(
+                          Icons.directions_car,
+                          color: Color(linea.colorValue),
+                        ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Text(
+                          recorridos.loadingTrazado
+                              ? l10n.loadingLine
+                              : l10n.lineOnMap(linea.nombre),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: l10n.clearLine,
+                        onPressed: recorridos.clearSelection,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
               if (routeService.loadingRoute)
                 MapOverlayCard(
                   padding: const EdgeInsets.symmetric(

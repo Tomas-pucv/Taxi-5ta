@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:taxi1/models/bus_stop.dart';
+import 'package:taxi1/services/osrm_client.dart';
 
 /// Resultado de un cálculo de ruta. Agrupa los puntos + métricas para que
 /// la UI pueda mostrar distancia y duración sin parsear de nuevo.
@@ -327,7 +328,7 @@ class RouteService extends ChangeNotifier {
         return false;
       }
 
-      final coords = _decodePolyline(encoded, precision: 6).where(_isValidLatLng).toList();
+      final coords = OsrmClient.decodePolyline(encoded).where(_isValidLatLng).toList();
       if (coords.isEmpty) {
         _lastError = 'provider_error';
         return false;
@@ -355,47 +356,7 @@ class RouteService extends ChangeNotifier {
     }
   }
 
-  /// Decodifica una polyline encoded (Google algorithm). OSRM usa precision=6
-  /// por defecto cuando se pide `polyline6`.
-  List<LatLng> _decodePolyline(String encoded, {int precision = 6}) {
-    final points = <LatLng>[];
-    int index = 0;
-    int lat = 0;
-    int lng = 0;
-
-    while (index < encoded.length) {
-      int result = 0;
-      int shift = 0;
-      int b;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      final dlat = ((result & 1) != 0) ? ~(result >> 1) : (result >> 1);
-      lat += dlat;
-
-      result = 0;
-      shift = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      final dlng = ((result & 1) != 0) ? ~(result >> 1) : (result >> 1);
-      lng += dlng;
-
-      final factor = _pow10(precision);
-      points.add(LatLng(lat / factor, lng / factor));
-    }
-    return points;
-  }
-
-  double _pow10(int n) {
-    var r = 1.0;
-    for (var i = 0; i < n; i++) {
-      r *= 10;
-    }
-    return r;
-  }
+  // El decodificador de polilíneas vivía acá. Ahora es
+  // `OsrmClient.decodePolyline`, compartido con el trazado de los recorridos
+  // de las líneas, que necesita exactamente el mismo formato.
 }

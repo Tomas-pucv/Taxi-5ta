@@ -6,6 +6,7 @@ import 'package:taxi1/models/recorrido.dart';
 import 'package:taxi1/navigation/app_destination.dart';
 import 'package:taxi1/services/auth_service.dart';
 import 'package:taxi1/services/garita_service.dart';
+import 'package:taxi1/services/recorridos_service.dart';
 import 'package:taxi1/services/stops_service.dart';
 import 'package:taxi1/theme/app_spacing.dart';
 import 'package:taxi1/theme/breakpoints.dart';
@@ -22,17 +23,18 @@ class RecorridosAdminScreen extends StatefulWidget {
 
 class _RecorridosAdminScreenState extends State<RecorridosAdminScreen> {
   final _garita = GaritaService.instance;
+  final _recorridosService = RecorridosService.instance;
   final _auth = AuthService.instance;
 
   @override
   void initState() {
     super.initState();
-    _garita.addListener(_onChanged);
+    _recorridosService.addListener(_onChanged);
   }
 
   @override
   void dispose() {
-    _garita.removeListener(_onChanged);
+    _recorridosService.removeListener(_onChanged);
     super.dispose();
   }
 
@@ -88,7 +90,7 @@ class _RecorridosAdminScreenState extends State<RecorridosAdminScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final recorridos = _garita.recorridos;
+    final recorridos = _recorridosService.porGarita(_auth.garitaId ?? '');
 
     return Scaffold(
       appBar: AppBar(title: Text(AppDestination.recorridos.label(l10n))),

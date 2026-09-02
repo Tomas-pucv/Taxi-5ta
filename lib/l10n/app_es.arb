@@ -4,7 +4,7 @@
   "appName": "ColeTotal",
 
   "navMap": "Mapa",
-  "navRoutes": "Rutas",
+  "navRoutes": "Paraderos",
   "navPreferences": "Preferencias",
 
   "calculatingRoute": "Calculando ruta…",
@@ -116,7 +116,7 @@
   "navTurno": "Turno",
   "navFlota": "Flota",
   "navGarita": "Garita",
-  "navStops": "Paraderos",
+  "navStops": "Gestión de paraderos",
   "navRecorridos": "Recorridos",
   "navDrivers": "Choferes",
 
@@ -281,5 +281,42 @@
   "welcomeDriverDesc": "Comparte tu posición con los pasajeros durante tu turno. Necesitas el código de tu garita.",
   "welcomeAdminDesc": "Gestiona paraderos, recorridos y choferes, y supervisa la flota en vivo.",
   "welcomeContinueGuest": "Entrar como invitado",
-  "welcomeChangeLater": "Puedes iniciar sesión cuando quieras desde el menú lateral."
+  "welcomeChangeLater": "Puedes iniciar sesión cuando quieras desde el menú lateral.",
+
+  "sortLabel": "Ordenar",
+  "sortNearest": "Cercanos",
+  "sortRecent": "Recientes",
+  "sortRecentEmpty": "Todavía no has consultado ningún paradero.",
+
+  "stopLinesTitle": "Colectivos que pasan por aquí",
+  "stopLinesEmpty": "Todavía no hay colectivos asignados a este paradero.",
+  "stopLinesEmptyHint": "La garita aún no ha cargado sus recorridos.",
+  "stopWalkHere": "Cómo llegar",
+  "stopSeeRoute": "Ver recorrido",
+  "lineOnMap": "Recorrido de {nombre}",
+  "@lineOnMap": {"placeholders": {"nombre": {"type": "String"}}},
+  "clearLine": "Quitar recorrido",
+  "loadingLine": "Trazando el recorrido…",
+
+  "searchAddressHint": "¿A qué dirección vas?",
+  "searchNoResults": "No se encontró esa dirección.",
+  "searchSearching": "Buscando…",
+  "searchClear": "Limpiar",
+  "destinationLabel": "Destino",
+
+  "suggestTitle": "Mejores paraderos para tu destino",
+  "suggestSubtitle": "Ordenados por lo que caminas en total",
+  "suggestWalkToStop": "{d} hasta el paradero",
+  "@suggestWalkToStop": {"placeholders": {"d": {"type": "String"}}},
+  "suggestWalkFromStop": "{d} desde la bajada",
+  "@suggestWalkFromStop": {"placeholders": {"d": {"type": "String"}}},
+  "suggestTakeLine": "Toma {linea}",
+  "@suggestTakeLine": {"placeholders": {"linea": {"type": "String"}}},
+  "suggestGetOff": "Bájate en {paradero}",
+  "@suggestGetOff": {"placeholders": {"paradero": {"type": "String"}}},
+  "suggestTotal": "{d} a pie en total",
+  "@suggestTotal": {"placeholders": {"d": {"type": "String"}}},
+  "suggestNoRoutes": "La garita todavía no ha cargado sus recorridos, así que estos paraderos se ordenan sólo por cercanía.",
+  "suggestEmpty": "No hay paraderos que sirvan para ese destino.",
+  "suggestLocationNeeded": "Necesitamos tu ubicación para recomendarte un paradero."
 }

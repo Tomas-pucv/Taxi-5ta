@@ -10,12 +10,10 @@ import 'package:taxi1/screens/admin/flota_screen.dart';
 import 'package:taxi1/screens/admin/garita_hub_screen.dart';
 import 'package:taxi1/screens/admin/paraderos_admin_screen.dart';
 import 'package:taxi1/screens/admin/recorridos_admin_screen.dart';
-import 'package:taxi1/screens/auth/welcome_screen.dart';
 import 'package:taxi1/screens/driver/turno_screen.dart';
 import 'package:taxi1/screens/preferences_screen.dart';
 import 'package:taxi1/screens/routes_screen.dart';
 import 'package:taxi1/services/auth_service.dart';
-import 'package:taxi1/services/preferences_service.dart';
 import 'package:taxi1/theme/breakpoints.dart';
 import 'package:taxi1/widgets/app_drawer.dart';
 
@@ -104,29 +102,13 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _nav.addListener(_onNavChanged);
     _auth.addListener(_onAuthChanged);
-    _maybeShowWelcome();
   }
 
-  /// Presenta los tres perfiles la primera vez que se abre la app.
-  ///
-  /// Se apila **encima** del mapa, que queda funcionando debajo, en vez de
-  /// interponerse antes de él: el invitado no necesita cuenta, así que hacer de
-  /// esto una puerta contradiría el diseño. Sólo se muestra una vez; su trabajo
-  /// es dar a conocer que existen los otros dos perfiles.
-  void _maybeShowWelcome() {
-    if (PreferencesService.instance.seenWelcome) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted) return;
-      await PreferencesService.instance.setSeenWelcome();
-      if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          fullscreenDialog: true,
-          builder: (_) => const WelcomeScreen(),
-        ),
-      );
-    });
-  }
+  // La app abre directamente en el mapa. Hubo aquí una pantalla de bienvenida
+  // que presentaba los tres perfiles en el primer arranque; se quitó porque
+  // interponía algo entre el usuario y lo único que la mayoría viene a ver. El
+  // acceso a las cuentas vive en la cabecera del menú lateral, que es donde se
+  // busca, y el invitado no necesita ninguna.
 
   @override
   void dispose() {

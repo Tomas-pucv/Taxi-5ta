@@ -12,6 +12,7 @@ import 'package:taxi1/screens/main_screen.dart';
 import 'package:taxi1/services/auth_service.dart';
 import 'package:taxi1/services/firebase_telemetria_service.dart';
 import 'package:taxi1/services/garita_service.dart';
+import 'package:taxi1/services/recorridos_service.dart';
 import 'package:taxi1/services/stops_service.dart';
 import 'package:taxi1/theme/app_spacing.dart';
 import 'package:taxi1/theme/breakpoints.dart';
@@ -34,6 +35,7 @@ class GaritaHubScreen extends StatefulWidget {
 class _GaritaHubScreenState extends State<GaritaHubScreen> {
   final _auth = AuthService.instance;
   final _garita = GaritaService.instance;
+  final _recorridos = RecorridosService.instance;
   final _stops = StopsService.instance;
 
   StreamSubscription<List<ColectivoActivo>>? _fleetSub;
@@ -44,6 +46,7 @@ class _GaritaHubScreenState extends State<GaritaHubScreen> {
     super.initState();
     _auth.addListener(_onChanged);
     _garita.addListener(_onChanged);
+    _recorridos.addListener(_onChanged);
     _stops.addListener(_onChanged);
 
     _fleetSub = FirebaseTelemetriaService.instance.telemetriaStream.listen((
@@ -63,6 +66,7 @@ class _GaritaHubScreenState extends State<GaritaHubScreen> {
   void dispose() {
     _auth.removeListener(_onChanged);
     _garita.removeListener(_onChanged);
+    _recorridos.removeListener(_onChanged);
     _stops.removeListener(_onChanged);
     _fleetSub?.cancel();
     super.dispose();
@@ -177,7 +181,7 @@ class _GaritaHubScreenState extends State<GaritaHubScreen> {
           Expanded(
             child: _MetricTile(
               icon: Icons.timeline_outlined,
-              value: '${_garita.recorridos.length}',
+              value: '${_recorridos.porGarita(_auth.garitaId ?? '').length}',
               label: l10n.adminMetricRoutes,
             ),
           ),

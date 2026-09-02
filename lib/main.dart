@@ -9,6 +9,7 @@ import 'package:taxi1/screens/main_screen.dart';
 import 'package:taxi1/services/auth_service.dart';
 import 'package:taxi1/services/garita_service.dart';
 import 'package:taxi1/services/preferences_service.dart';
+import 'package:taxi1/services/recorridos_service.dart';
 import 'package:taxi1/services/route_service.dart';
 import 'package:taxi1/services/turno_service.dart';
 import 'package:taxi1/services/stop_history_service.dart';
@@ -48,6 +49,10 @@ void main() async {
   // paraderos semilla desde el constructor, así que la app dibuja algo en el
   // primer frame aunque Firestore tarde o no responda.
   StopsService.instance.startListening();
+
+  // Los recorridos los lee todo el mundo, no sólo el administrador: son la
+  // respuesta a "qué colectivos pasan por este paradero".
+  RecorridosService.instance.startListening();
 
   // Si el administrador mueve o da de baja el paradero que el pasajero tiene
   // como destino, la ruta dibujada apuntaría a un fantasma.

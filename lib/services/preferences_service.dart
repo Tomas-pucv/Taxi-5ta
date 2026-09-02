@@ -13,7 +13,6 @@ class PreferencesService extends ChangeNotifier {
   static const _keyFontSize = 'font_size';
   static const _keyDensity = 'compact_mode';
   static const _keyAnimations = 'animations_enabled';
-  static const _keySeenWelcome = 'seen_welcome';
 
   // Mapa
   String _mapType = 'normal';
@@ -36,8 +35,6 @@ class PreferencesService extends ChangeNotifier {
   // un identificador inventado, que además impedía escribir cualquier regla de
   // seguridad. El rol es identidad, no preferencia: vive en `AuthService`.
 
-  /// Si ya se mostró la presentación de perfiles del primer arranque.
-  bool _seenWelcome = false;
 
   bool _initialized = false;
 
@@ -63,7 +60,6 @@ class PreferencesService extends ChangeNotifier {
   bool get locationTracking => _locationTracking;
   bool get historyEnabled => _historyEnabled;
 
-  bool get seenWelcome => _seenWelcome;
 
   bool get isInitialized => _initialized;
 
@@ -78,25 +74,17 @@ class PreferencesService extends ChangeNotifier {
     _fontSizeMultiplier = prefs.getDouble(_keyFontSize) ?? 1.0;
     _compactMode = prefs.getBool(_keyDensity) ?? false;
     _animationsEnabled = prefs.getBool(_keyAnimations) ?? true;
-    _seenWelcome = prefs.getBool(_keySeenWelcome) ?? false;
 
-    // Restos del rol local, de cuando "chofer" era una preferencia. Se borran
+    // Restos de estados que ya no existen: el rol local (cuando "chofer" era
+    // una preferencia) y la bandera de la pantalla de bienvenida. Se borran
     // una vez para que un teléfono actualizado no arrastre un identificador de
     // vehículo que ya no significa nada.
     await prefs.remove('user_role');
     await prefs.remove('driver_id');
+    await prefs.remove('seen_welcome');
 
     _initialized = true;
     notifyListeners();
-  }
-
-  Future<void> setSeenWelcome() async {
-    if (_seenWelcome) return;
-    _seenWelcome = true;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keySeenWelcome, true);
-    // Sin notifyListeners: no cambia nada visible y evita reconstruir el árbol
-    // entero justo cuando se está animando el cierre de la bienvenida.
   }
 
   // Setters - Mapa

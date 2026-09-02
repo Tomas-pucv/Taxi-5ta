@@ -23,15 +23,12 @@ class GaritaService extends ChangeNotifier {
 
   FirebaseFirestore get _db => FirebaseFirestore.instance;
 
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _recorridosSub;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _choferesSub;
 
-  List<Recorrido> _recorridos = const [];
   List<AppUser> _choferes = const [];
   String? _garitaId;
   bool _loading = false;
 
-  List<Recorrido> get recorridos => _recorridos;
   List<AppUser> get choferes => _choferes;
   bool get loading => _loading;
   String? get garitaId => _garitaId;
@@ -50,7 +47,6 @@ class GaritaService extends ChangeNotifier {
     _garitaId = gid;
     if (gid == null) {
       _stop();
-      _recorridos = const [];
       _choferes = const [];
       notifyListeners();
       return;
@@ -63,24 +59,11 @@ class GaritaService extends ChangeNotifier {
     _loading = true;
     notifyListeners();
 
-    _recorridosSub = _db
-        .collection(_colRecorridos)
-        .where('garitaId', isEqualTo: garitaId)
-        .snapshots()
-        .listen(
-          (snap) {
-            _recorridos = snap.docs
-                .map((d) => Recorrido.fromMap(d.id, d.data()))
-                .toList(growable: false);
-            _loading = false;
-            notifyListeners();
-          },
-          onError: (Object e) {
-            debugPrint('GaritaService: recorridos: $e');
-            _loading = false;
-            notifyListeners();
-          },
-        );
+    // Los recorridos NO se leen aquí: los escucha `RecorridosService`, que es
+    // público porque el pasajero también los necesita para saber qué colectivos
+    // pasan por un paradero. Dos listeners sobre la misma colección serían dos
+    // suscripciones cobradas para el mismo dato.
+    _loading = false;
 
     _choferesSub = _db
         .collection(_colUsuarios)
@@ -104,8 +87,6 @@ class GaritaService extends ChangeNotifier {
   }
 
   void _stop() {
-    _recorridosSub?.cancel();
-    _recorridosSub = null;
     _choferesSub?.cancel();
     _choferesSub = null;
   }

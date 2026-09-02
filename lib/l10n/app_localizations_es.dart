@@ -15,7 +15,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navMap => 'Mapa';
 
   @override
-  String get navRoutes => 'Rutas';
+  String get navRoutes => 'Paraderos';
 
   @override
   String get navPreferences => 'Preferencias';
@@ -329,7 +329,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navGarita => 'Garita';
 
   @override
-  String get navStops => 'Paraderos';
+  String get navStops => 'Gestión de paraderos';
 
   @override
   String get navRecorridos => 'Recorridos';
@@ -803,4 +803,101 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get welcomeChangeLater =>
       'Puedes iniciar sesión cuando quieras desde el menú lateral.';
+
+  @override
+  String get sortLabel => 'Ordenar';
+
+  @override
+  String get sortNearest => 'Cercanos';
+
+  @override
+  String get sortRecent => 'Recientes';
+
+  @override
+  String get sortRecentEmpty => 'Todavía no has consultado ningún paradero.';
+
+  @override
+  String get stopLinesTitle => 'Colectivos que pasan por aquí';
+
+  @override
+  String get stopLinesEmpty =>
+      'Todavía no hay colectivos asignados a este paradero.';
+
+  @override
+  String get stopLinesEmptyHint =>
+      'La garita aún no ha cargado sus recorridos.';
+
+  @override
+  String get stopWalkHere => 'Cómo llegar';
+
+  @override
+  String get stopSeeRoute => 'Ver recorrido';
+
+  @override
+  String lineOnMap(String nombre) {
+    return 'Recorrido de $nombre';
+  }
+
+  @override
+  String get clearLine => 'Quitar recorrido';
+
+  @override
+  String get loadingLine => 'Trazando el recorrido…';
+
+  @override
+  String get searchAddressHint => '¿A qué dirección vas?';
+
+  @override
+  String get searchNoResults => 'No se encontró esa dirección.';
+
+  @override
+  String get searchSearching => 'Buscando…';
+
+  @override
+  String get searchClear => 'Limpiar';
+
+  @override
+  String get destinationLabel => 'Destino';
+
+  @override
+  String get suggestTitle => 'Mejores paraderos para tu destino';
+
+  @override
+  String get suggestSubtitle => 'Ordenados por lo que caminas en total';
+
+  @override
+  String suggestWalkToStop(String d) {
+    return '$d hasta el paradero';
+  }
+
+  @override
+  String suggestWalkFromStop(String d) {
+    return '$d desde la bajada';
+  }
+
+  @override
+  String suggestTakeLine(String linea) {
+    return 'Toma $linea';
+  }
+
+  @override
+  String suggestGetOff(String paradero) {
+    return 'Bájate en $paradero';
+  }
+
+  @override
+  String suggestTotal(String d) {
+    return '$d a pie en total';
+  }
+
+  @override
+  String get suggestNoRoutes =>
+      'La garita todavía no ha cargado sus recorridos, así que estos paraderos se ordenan sólo por cercanía.';
+
+  @override
+  String get suggestEmpty => 'No hay paraderos que sirvan para ese destino.';
+
+  @override
+  String get suggestLocationNeeded =>
+      'Necesitamos tu ubicación para recomendarte un paradero.';
 }
