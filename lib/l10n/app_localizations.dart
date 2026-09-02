@@ -172,6 +172,48 @@ abstract class AppLocalizations {
   /// **'No se pudo obtener la ruta. Inténtalo de nuevo.'**
   String get routeErrorDefault;
 
+  /// No description provided for @reorientMap.
+  ///
+  /// In es, this message translates to:
+  /// **'Orientar al norte'**
+  String get reorientMap;
+
+  /// No description provided for @recenterActive.
+  ///
+  /// In es, this message translates to:
+  /// **'Seguimiento activo'**
+  String get recenterActive;
+
+  /// No description provided for @recenterInactive.
+  ///
+  /// In es, this message translates to:
+  /// **'Centrar en mi ubicación'**
+  String get recenterInactive;
+
+  /// No description provided for @stopSemanticLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Paradero {name}, {address}'**
+  String stopSemanticLabel(String name, String address);
+
+  /// No description provided for @telemetryUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo cargar la posición de los colectivos.'**
+  String get telemetryUnavailable;
+
+  /// No description provided for @mapLayers.
+  ///
+  /// In es, this message translates to:
+  /// **'Capas del mapa'**
+  String get mapLayers;
+
+  /// No description provided for @moreSettings.
+  ///
+  /// In es, this message translates to:
+  /// **'Más ajustes'**
+  String get moreSettings;
+
   /// No description provided for @calculateRouteTitle.
   ///
   /// In es, this message translates to:
@@ -202,6 +244,12 @@ abstract class AppLocalizations {
   /// **'Sin resultados para \"{query}\"'**
   String noResults(String query);
 
+  /// No description provided for @noResultsHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Prueba con otro nombre o revisa la ortografía.'**
+  String get noResultsHint;
+
   /// No description provided for @goToNearestStop.
   ///
   /// In es, this message translates to:
@@ -211,7 +259,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationUnavailable.
   ///
   /// In es, this message translates to:
-  /// **'Tu ubicación aún no está disponible. Activá el GPS o esperá unos segundos.'**
+  /// **'Tu ubicación aún no está disponible. Activa el GPS o espera unos segundos.'**
   String get locationUnavailable;
 
   /// No description provided for @routeCalcErrorDefault.
@@ -244,23 +292,95 @@ abstract class AppLocalizations {
   /// **'Lejos'**
   String get far;
 
+  /// No description provided for @distanceUnavailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Distancia no disponible'**
+  String get distanceUnavailable;
+
+  /// No description provided for @enableLocationForSorting.
+  ///
+  /// In es, this message translates to:
+  /// **'Activa la ubicación para ordenar los paraderos por cercanía.'**
+  String get enableLocationForSorting;
+
+  /// No description provided for @recentStops.
+  ///
+  /// In es, this message translates to:
+  /// **'Consultados recientemente'**
+  String get recentStops;
+
+  /// No description provided for @allStops.
+  ///
+  /// In es, this message translates to:
+  /// **'Todos los paraderos'**
+  String get allStops;
+
+  /// No description provided for @locationOffTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Ubicación desactivada'**
+  String get locationOffTitle;
+
+  /// No description provided for @locationOffMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Activa el GPS del teléfono para ver tu posición y los paraderos cercanos.'**
+  String get locationOffMessage;
+
+  /// No description provided for @locationDeniedTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Permiso de ubicación denegado'**
+  String get locationDeniedTitle;
+
+  /// No description provided for @locationDeniedMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'ColeTotal necesita acceso a tu ubicación para calcular rutas y mostrarte los paraderos más cercanos.'**
+  String get locationDeniedMessage;
+
+  /// No description provided for @locationDisabledByPreference.
+  ///
+  /// In es, this message translates to:
+  /// **'Tienes el rastreo de ubicación desactivado en Preferencias.'**
+  String get locationDisabledByPreference;
+
+  /// No description provided for @openSettings.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir ajustes'**
+  String get openSettings;
+
+  /// No description provided for @retry.
+  ///
+  /// In es, this message translates to:
+  /// **'Reintentar'**
+  String get retry;
+
   /// No description provided for @preferencesTitle.
   ///
   /// In es, this message translates to:
   /// **'Preferencias'**
   String get preferencesTitle;
 
-  /// No description provided for @sectionMap.
+  /// No description provided for @sectionMapStyle.
   ///
   /// In es, this message translates to:
-  /// **'Mapa'**
-  String get sectionMap;
+  /// **'Estilo de mapa'**
+  String get sectionMapStyle;
 
   /// No description provided for @mapNormal.
   ///
   /// In es, this message translates to:
-  /// **'Mapa normal'**
+  /// **'Calles'**
   String get mapNormal;
+
+  /// No description provided for @mapNormalDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Mapa estándar'**
+  String get mapNormalDesc;
 
   /// No description provided for @satellite.
   ///
@@ -268,11 +388,47 @@ abstract class AppLocalizations {
   /// **'Satélite'**
   String get satellite;
 
+  /// No description provided for @satelliteDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Foto aérea'**
+  String get satelliteDesc;
+
   /// No description provided for @sectionAppearance.
   ///
   /// In es, this message translates to:
   /// **'Apariencia'**
   String get sectionAppearance;
+
+  /// No description provided for @themeLabel.
+  ///
+  /// In es, this message translates to:
+  /// **'Tema'**
+  String get themeLabel;
+
+  /// No description provided for @themeSystemShort.
+  ///
+  /// In es, this message translates to:
+  /// **'Auto'**
+  String get themeSystemShort;
+
+  /// No description provided for @themeLightShort.
+  ///
+  /// In es, this message translates to:
+  /// **'Claro'**
+  String get themeLightShort;
+
+  /// No description provided for @themeDarkShort.
+  ///
+  /// In es, this message translates to:
+  /// **'Oscuro'**
+  String get themeDarkShort;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In es, this message translates to:
+  /// **'Automático (según el sistema)'**
+  String get themeSystem;
 
   /// No description provided for @themeLight.
   ///
@@ -292,11 +448,23 @@ abstract class AppLocalizations {
   /// **'Tamaño de fuente'**
   String get fontSize;
 
+  /// No description provided for @fontSizePreviewHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Así se verán los paraderos'**
+  String get fontSizePreviewHint;
+
   /// No description provided for @compactMode.
   ///
   /// In es, this message translates to:
   /// **'Modo compacto'**
   String get compactMode;
+
+  /// No description provided for @compactModeDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Filas más juntas, cabe más en pantalla'**
+  String get compactModeDesc;
 
   /// No description provided for @animations.
   ///
@@ -304,17 +472,11 @@ abstract class AppLocalizations {
   /// **'Animaciones'**
   String get animations;
 
-  /// No description provided for @sectionNotifications.
+  /// No description provided for @animationsDesc.
   ///
   /// In es, this message translates to:
-  /// **'Notificaciones'**
-  String get sectionNotifications;
-
-  /// No description provided for @enableNotifications.
-  ///
-  /// In es, this message translates to:
-  /// **'Habilitar notificaciones'**
-  String get enableNotifications;
+  /// **'Transiciones y pulso de los paraderos'**
+  String get animationsDesc;
 
   /// No description provided for @sectionPrivacy.
   ///
@@ -327,6 +489,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Rastreo de ubicación'**
   String get locationTracking;
+
+  /// No description provided for @locationTrackingDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Necesario para centrar el mapa y calcular rutas'**
+  String get locationTrackingDesc;
 
   /// No description provided for @disableTrackingTitle.
   ///
@@ -345,6 +513,24 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Guardar historial'**
   String get saveHistory;
+
+  /// No description provided for @saveHistoryDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Recuerda los últimos {count} paraderos consultados'**
+  String saveHistoryDesc(String count);
+
+  /// No description provided for @clearHistory.
+  ///
+  /// In es, this message translates to:
+  /// **'Borrar'**
+  String get clearHistory;
+
+  /// No description provided for @historyCleared.
+  ///
+  /// In es, this message translates to:
+  /// **'Historial borrado.'**
+  String get historyCleared;
 
   /// No description provided for @cancel.
   ///
@@ -376,6 +562,12 @@ abstract class AppLocalizations {
   /// **'English'**
   String get languageEnglish;
 
+  /// No description provided for @sectionAbout.
+  ///
+  /// In es, this message translates to:
+  /// **'Acerca de'**
+  String get sectionAbout;
+
   /// No description provided for @infoTitle.
   ///
   /// In es, this message translates to:
@@ -387,6 +579,18 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tus preferencias se guardan automáticamente. Todos los cambios se aplican inmediatamente.'**
   String get infoBody;
+
+  /// No description provided for @aboutVersion.
+  ///
+  /// In es, this message translates to:
+  /// **'ColeTotal versión {version}'**
+  String aboutVersion(String version);
+
+  /// No description provided for @aboutSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Rutas y paraderos de Transportes Serrano, Quilpué.'**
+  String get aboutSubtitle;
 
   /// No description provided for @errInvalidCoords.
   ///
@@ -441,6 +645,882 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{h} h {m} min'**
   String durationHourMin(String h, String m);
+
+  /// No description provided for @navTurno.
+  ///
+  /// In es, this message translates to:
+  /// **'Turno'**
+  String get navTurno;
+
+  /// No description provided for @navFlota.
+  ///
+  /// In es, this message translates to:
+  /// **'Flota'**
+  String get navFlota;
+
+  /// No description provided for @navGarita.
+  ///
+  /// In es, this message translates to:
+  /// **'Garita'**
+  String get navGarita;
+
+  /// No description provided for @navStops.
+  ///
+  /// In es, this message translates to:
+  /// **'Paraderos'**
+  String get navStops;
+
+  /// No description provided for @navRecorridos.
+  ///
+  /// In es, this message translates to:
+  /// **'Recorridos'**
+  String get navRecorridos;
+
+  /// No description provided for @navDrivers.
+  ///
+  /// In es, this message translates to:
+  /// **'Choferes'**
+  String get navDrivers;
+
+  /// No description provided for @roleGuest.
+  ///
+  /// In es, this message translates to:
+  /// **'Invitado'**
+  String get roleGuest;
+
+  /// No description provided for @roleColectivero.
+  ///
+  /// In es, this message translates to:
+  /// **'Colectivero'**
+  String get roleColectivero;
+
+  /// No description provided for @roleAdmin.
+  ///
+  /// In es, this message translates to:
+  /// **'Administrador'**
+  String get roleAdmin;
+
+  /// No description provided for @roleGuestSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Estás usando ColeTotal sin cuenta'**
+  String get roleGuestSubtitle;
+
+  /// No description provided for @roleColectiveroSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Transmites tu posición a la garita'**
+  String get roleColectiveroSubtitle;
+
+  /// No description provided for @roleAdminSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Gestionas los datos de la garita'**
+  String get roleAdminSubtitle;
+
+  /// No description provided for @openMenu.
+  ///
+  /// In es, this message translates to:
+  /// **'Abrir menú'**
+  String get openMenu;
+
+  /// No description provided for @drawerNavigation.
+  ///
+  /// In es, this message translates to:
+  /// **'Navegación'**
+  String get drawerNavigation;
+
+  /// No description provided for @drawerDriverSection.
+  ///
+  /// In es, this message translates to:
+  /// **'Mi jornada'**
+  String get drawerDriverSection;
+
+  /// No description provided for @drawerAdminSection.
+  ///
+  /// In es, this message translates to:
+  /// **'Garita'**
+  String get drawerAdminSection;
+
+  /// No description provided for @signIn.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar sesión'**
+  String get signIn;
+
+  /// No description provided for @createAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear cuenta'**
+  String get createAccount;
+
+  /// No description provided for @signOut.
+  ///
+  /// In es, this message translates to:
+  /// **'Cerrar sesión'**
+  String get signOut;
+
+  /// No description provided for @signOutMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Volverás al modo invitado y dejarás de transmitir tu ubicación.'**
+  String get signOutMessage;
+
+  /// No description provided for @comingSoonTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'En construcción'**
+  String get comingSoonTitle;
+
+  /// No description provided for @comingSoonMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta sección todavía no está disponible.'**
+  String get comingSoonMessage;
+
+  /// No description provided for @authLoginTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar sesión'**
+  String get authLoginTitle;
+
+  /// No description provided for @authRegisterTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear cuenta'**
+  String get authRegisterTitle;
+
+  /// No description provided for @authRoleQuestion.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo vas a entrar?'**
+  String get authRoleQuestion;
+
+  /// No description provided for @authPatente.
+  ///
+  /// In es, this message translates to:
+  /// **'Patente'**
+  String get authPatente;
+
+  /// No description provided for @authPatenteHint.
+  ///
+  /// In es, this message translates to:
+  /// **'BBBB12'**
+  String get authPatenteHint;
+
+  /// No description provided for @authEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo electrónico'**
+  String get authEmail;
+
+  /// No description provided for @authPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Contraseña'**
+  String get authPassword;
+
+  /// No description provided for @authPasswordConfirm.
+  ///
+  /// In es, this message translates to:
+  /// **'Repite la contraseña'**
+  String get authPasswordConfirm;
+
+  /// No description provided for @authName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre'**
+  String get authName;
+
+  /// No description provided for @authNameHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Como quieres que te vean en la garita'**
+  String get authNameHint;
+
+  /// No description provided for @authCodigo.
+  ///
+  /// In es, this message translates to:
+  /// **'Código de garita'**
+  String get authCodigo;
+
+  /// No description provided for @authCodigoHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Te lo entrega el administrador de tu garita.'**
+  String get authCodigoHelp;
+
+  /// No description provided for @authCodigoChecking.
+  ///
+  /// In es, this message translates to:
+  /// **'Comprobando código…'**
+  String get authCodigoChecking;
+
+  /// No description provided for @authCodigoValid.
+  ///
+  /// In es, this message translates to:
+  /// **'Código válido para {garita}'**
+  String authCodigoValid(String garita);
+
+  /// No description provided for @authCodigoInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Ese código no existe, no está habilitado o no corresponde a este rol.'**
+  String get authCodigoInvalid;
+
+  /// No description provided for @authSubmitLogin.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrar'**
+  String get authSubmitLogin;
+
+  /// No description provided for @authSubmitRegister.
+  ///
+  /// In es, this message translates to:
+  /// **'Crear cuenta'**
+  String get authSubmitRegister;
+
+  /// No description provided for @authNoAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'¿No tienes cuenta? Regístrate'**
+  String get authNoAccount;
+
+  /// No description provided for @authHasAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Ya tienes cuenta? Inicia sesión'**
+  String get authHasAccount;
+
+  /// No description provided for @authRequired.
+  ///
+  /// In es, this message translates to:
+  /// **'Completa este campo'**
+  String get authRequired;
+
+  /// No description provided for @authPatenteInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Patente inválida. Debe ser como BBBB12 o AB1234.'**
+  String get authPatenteInvalid;
+
+  /// No description provided for @authEmailInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Escribe un correo válido.'**
+  String get authEmailInvalid;
+
+  /// No description provided for @authPasswordShort.
+  ///
+  /// In es, this message translates to:
+  /// **'Mínimo 6 caracteres.'**
+  String get authPasswordShort;
+
+  /// No description provided for @authPasswordMismatch.
+  ///
+  /// In es, this message translates to:
+  /// **'Las contraseñas no coinciden.'**
+  String get authPasswordMismatch;
+
+  /// No description provided for @authPasswordNote.
+  ///
+  /// In es, this message translates to:
+  /// **'Guarda bien tu contraseña: la patente no es un correo real, así que no se puede recuperar por email. Si la pierdes, tendrás que pedírselo a tu garita.'**
+  String get authPasswordNote;
+
+  /// No description provided for @authShowPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Mostrar contraseña'**
+  String get authShowPassword;
+
+  /// No description provided for @authHidePassword.
+  ///
+  /// In es, this message translates to:
+  /// **'Ocultar contraseña'**
+  String get authHidePassword;
+
+  /// No description provided for @authWelcome.
+  ///
+  /// In es, this message translates to:
+  /// **'Hola, {nombre}'**
+  String authWelcome(String nombre);
+
+  /// No description provided for @authGuestHint.
+  ///
+  /// In es, this message translates to:
+  /// **'El invitado no necesita cuenta: cierra esta pantalla y sigue usando el mapa.'**
+  String get authGuestHint;
+
+  /// No description provided for @errAuthCredentials.
+  ///
+  /// In es, this message translates to:
+  /// **'Patente o contraseña incorrecta.'**
+  String get errAuthCredentials;
+
+  /// No description provided for @errAuthCredentialsEmail.
+  ///
+  /// In es, this message translates to:
+  /// **'Correo o contraseña incorrecta.'**
+  String get errAuthCredentialsEmail;
+
+  /// No description provided for @errAuthAccountInUse.
+  ///
+  /// In es, this message translates to:
+  /// **'Ya existe una cuenta registrada con esos datos.'**
+  String get errAuthAccountInUse;
+
+  /// No description provided for @errAuthWeakPassword.
+  ///
+  /// In es, this message translates to:
+  /// **'La contraseña es muy débil: usa al menos 6 caracteres.'**
+  String get errAuthWeakPassword;
+
+  /// No description provided for @errAuthPatenteInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Patente inválida.'**
+  String get errAuthPatenteInvalid;
+
+  /// No description provided for @errAuthCodigoInvalid.
+  ///
+  /// In es, this message translates to:
+  /// **'Código de garita inválido para ese rol.'**
+  String get errAuthCodigoInvalid;
+
+  /// No description provided for @errAuthDisabled.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta está deshabilitada. Habla con tu garita.'**
+  String get errAuthDisabled;
+
+  /// No description provided for @errAuthNetwork.
+  ///
+  /// In es, this message translates to:
+  /// **'Sin conexión. Revisa tu red e inténtalo de nuevo.'**
+  String get errAuthNetwork;
+
+  /// No description provided for @errAuthUnknown.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo completar la operación. Inténtalo de nuevo.'**
+  String get errAuthUnknown;
+
+  /// No description provided for @sectionAccount.
+  ///
+  /// In es, this message translates to:
+  /// **'Cuenta'**
+  String get sectionAccount;
+
+  /// No description provided for @turnoTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Turno'**
+  String get turnoTitle;
+
+  /// No description provided for @turnoOn.
+  ///
+  /// In es, this message translates to:
+  /// **'En servicio'**
+  String get turnoOn;
+
+  /// No description provided for @turnoOff.
+  ///
+  /// In es, this message translates to:
+  /// **'Fuera de servicio'**
+  String get turnoOff;
+
+  /// No description provided for @turnoOnDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Los pasajeros ven tu posición en el mapa.'**
+  String get turnoOnDesc;
+
+  /// No description provided for @turnoOffDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'No se transmite nada. Nadie ve dónde estás.'**
+  String get turnoOffDesc;
+
+  /// No description provided for @turnoStart.
+  ///
+  /// In es, this message translates to:
+  /// **'Iniciar turno'**
+  String get turnoStart;
+
+  /// No description provided for @turnoEnd.
+  ///
+  /// In es, this message translates to:
+  /// **'Terminar turno'**
+  String get turnoEnd;
+
+  /// No description provided for @turnoCapacity.
+  ///
+  /// In es, this message translates to:
+  /// **'Capacidad'**
+  String get turnoCapacity;
+
+  /// No description provided for @turnoCapacityHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambia el color de tu marcador para los pasajeros y la garita.'**
+  String get turnoCapacityHelp;
+
+  /// No description provided for @capacityAvailable.
+  ///
+  /// In es, this message translates to:
+  /// **'Disponible'**
+  String get capacityAvailable;
+
+  /// No description provided for @capacityHalf.
+  ///
+  /// In es, this message translates to:
+  /// **'Medio lleno'**
+  String get capacityHalf;
+
+  /// No description provided for @capacityFull.
+  ///
+  /// In es, this message translates to:
+  /// **'Lleno'**
+  String get capacityFull;
+
+  /// No description provided for @turnoVehicle.
+  ///
+  /// In es, this message translates to:
+  /// **'Mi vehículo'**
+  String get turnoVehicle;
+
+  /// No description provided for @turnoLastSent.
+  ///
+  /// In es, this message translates to:
+  /// **'Última posición enviada: {hora}'**
+  String turnoLastSent(String hora);
+
+  /// No description provided for @turnoNoSignal.
+  ///
+  /// In es, this message translates to:
+  /// **'Aún no se ha enviado ninguna posición.'**
+  String get turnoNoSignal;
+
+  /// No description provided for @turnoIssueTracking.
+  ///
+  /// In es, this message translates to:
+  /// **'Tienes el rastreo de ubicación desactivado en Preferencias. Actívalo para poder iniciar tu turno.'**
+  String get turnoIssueTracking;
+
+  /// No description provided for @turnoIssueInactive.
+  ///
+  /// In es, this message translates to:
+  /// **'Tu cuenta está deshabilitada por la garita. Habla con el administrador.'**
+  String get turnoIssueInactive;
+
+  /// No description provided for @turnoIssueLocation.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pudo acceder al GPS. Revisa que esté encendido y que la app tenga permiso.'**
+  String get turnoIssueLocation;
+
+  /// No description provided for @turnoConsent.
+  ///
+  /// In es, this message translates to:
+  /// **'Al iniciar el turno compartes tu ubicación en tiempo real con los pasajeros y con tu garita, mientras el turno esté activo. Puedes detenerlo cuando quieras (Ley 19.628).'**
+  String get turnoConsent;
+
+  /// No description provided for @turnoOnlyDrivers.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta sección es para los colectiveros de la garita.'**
+  String get turnoOnlyDrivers;
+
+  /// No description provided for @save.
+  ///
+  /// In es, this message translates to:
+  /// **'Guardar'**
+  String get save;
+
+  /// No description provided for @delete.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar'**
+  String get delete;
+
+  /// No description provided for @adminOnly.
+  ///
+  /// In es, this message translates to:
+  /// **'Esta sección es para los administradores de garita.'**
+  String get adminOnly;
+
+  /// No description provided for @adminMetricUnits.
+  ///
+  /// In es, this message translates to:
+  /// **'En servicio'**
+  String get adminMetricUnits;
+
+  /// No description provided for @adminMetricStops.
+  ///
+  /// In es, this message translates to:
+  /// **'Paraderos'**
+  String get adminMetricStops;
+
+  /// No description provided for @adminMetricRoutes.
+  ///
+  /// In es, this message translates to:
+  /// **'Recorridos'**
+  String get adminMetricRoutes;
+
+  /// No description provided for @adminStopsDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Agrega, mueve o da de baja paraderos'**
+  String get adminStopsDesc;
+
+  /// No description provided for @adminRoutesDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Define los recorridos de la línea'**
+  String get adminRoutesDesc;
+
+  /// No description provided for @adminDriversDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Habilita o deshabilita a tus choferes'**
+  String get adminDriversDesc;
+
+  /// No description provided for @adminFleetDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Dónde está cada unidad ahora mismo'**
+  String get adminFleetDesc;
+
+  /// No description provided for @adminSectionData.
+  ///
+  /// In es, this message translates to:
+  /// **'Datos de la línea'**
+  String get adminSectionData;
+
+  /// No description provided for @adminSectionOps.
+  ///
+  /// In es, this message translates to:
+  /// **'Operación'**
+  String get adminSectionOps;
+
+  /// No description provided for @stopAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Añadir paradero'**
+  String get stopAdd;
+
+  /// No description provided for @stopEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar paradero'**
+  String get stopEdit;
+
+  /// No description provided for @stopName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre'**
+  String get stopName;
+
+  /// No description provided for @stopAddress.
+  ///
+  /// In es, this message translates to:
+  /// **'Dirección'**
+  String get stopAddress;
+
+  /// No description provided for @stopActive.
+  ///
+  /// In es, this message translates to:
+  /// **'Visible para los pasajeros'**
+  String get stopActive;
+
+  /// No description provided for @stopDeleteTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Dar de baja el paradero'**
+  String get stopDeleteTitle;
+
+  /// No description provided for @stopDeleteMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'{nombre} dejará de aparecer en el mapa y en las búsquedas. No se borra: los recorridos y el historial que lo referencian siguen funcionando.'**
+  String stopDeleteMessage(String nombre);
+
+  /// No description provided for @stopDeactivate.
+  ///
+  /// In es, this message translates to:
+  /// **'Dar de baja'**
+  String get stopDeactivate;
+
+  /// No description provided for @stopSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Paradero guardado.'**
+  String get stopSaved;
+
+  /// No description provided for @stopDeleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Paradero dado de baja.'**
+  String get stopDeleted;
+
+  /// No description provided for @stopPickOnMap.
+  ///
+  /// In es, this message translates to:
+  /// **'Mantén pulsado el mapa para mover el paradero'**
+  String get stopPickOnMap;
+
+  /// No description provided for @stopSearchHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Buscar paradero…'**
+  String get stopSearchHint;
+
+  /// No description provided for @stopsEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay paraderos cargados.'**
+  String get stopsEmpty;
+
+  /// No description provided for @stopsImportSeed.
+  ///
+  /// In es, this message translates to:
+  /// **'Importar paraderos de ejemplo'**
+  String get stopsImportSeed;
+
+  /// No description provided for @stopsImported.
+  ///
+  /// In es, this message translates to:
+  /// **'Se importaron {count} paraderos.'**
+  String stopsImported(String count);
+
+  /// No description provided for @stopsSeedNotice.
+  ///
+  /// In es, this message translates to:
+  /// **'Estos son paraderos de referencia, todavía no están en la base de datos de tu garita. Impórtalos una vez para poder editarlos.'**
+  String get stopsSeedNotice;
+
+  /// No description provided for @fleetEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Ninguna unidad en servicio ahora mismo.'**
+  String get fleetEmpty;
+
+  /// No description provided for @fleetEmptyHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Aparecerán aquí en cuanto un chofer inicie su turno.'**
+  String get fleetEmptyHint;
+
+  /// No description provided for @fleetSeenNow.
+  ///
+  /// In es, this message translates to:
+  /// **'Ahora mismo'**
+  String get fleetSeenNow;
+
+  /// No description provided for @fleetSeenAgo.
+  ///
+  /// In es, this message translates to:
+  /// **'Hace {minutos} min'**
+  String fleetSeenAgo(String minutos);
+
+  /// No description provided for @fleetUnitsInService.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} en servicio'**
+  String fleetUnitsInService(String count);
+
+  /// No description provided for @routeAdd.
+  ///
+  /// In es, this message translates to:
+  /// **'Nuevo recorrido'**
+  String get routeAdd;
+
+  /// No description provided for @routeEdit.
+  ///
+  /// In es, this message translates to:
+  /// **'Editar recorrido'**
+  String get routeEdit;
+
+  /// No description provided for @routeName.
+  ///
+  /// In es, this message translates to:
+  /// **'Nombre del recorrido'**
+  String get routeName;
+
+  /// No description provided for @routeColor.
+  ///
+  /// In es, this message translates to:
+  /// **'Color en el mapa'**
+  String get routeColor;
+
+  /// No description provided for @routeStops.
+  ///
+  /// In es, this message translates to:
+  /// **'Paraderos del recorrido'**
+  String get routeStops;
+
+  /// No description provided for @routeStopsHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Arrastra para reordenar: el trazado sigue este orden.'**
+  String get routeStopsHelp;
+
+  /// No description provided for @routeAddStop.
+  ///
+  /// In es, this message translates to:
+  /// **'Agregar paradero'**
+  String get routeAddStop;
+
+  /// No description provided for @routeActive.
+  ///
+  /// In es, this message translates to:
+  /// **'Recorrido activo'**
+  String get routeActive;
+
+  /// No description provided for @routeSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Recorrido guardado.'**
+  String get routeSaved;
+
+  /// No description provided for @routeDeleted.
+  ///
+  /// In es, this message translates to:
+  /// **'Recorrido eliminado.'**
+  String get routeDeleted;
+
+  /// No description provided for @routesEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay recorridos definidos.'**
+  String get routesEmpty;
+
+  /// No description provided for @routeStopCount.
+  ///
+  /// In es, this message translates to:
+  /// **'{count} paraderos'**
+  String routeStopCount(String count);
+
+  /// No description provided for @routeNeedsStops.
+  ///
+  /// In es, this message translates to:
+  /// **'Un recorrido necesita al menos dos paraderos.'**
+  String get routeNeedsStops;
+
+  /// No description provided for @routeDeleteTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Eliminar recorrido'**
+  String get routeDeleteTitle;
+
+  /// No description provided for @routeDeleteMessage.
+  ///
+  /// In es, this message translates to:
+  /// **'Se eliminará {nombre}. Los paraderos no se tocan.'**
+  String routeDeleteMessage(String nombre);
+
+  /// No description provided for @routeTraceHint.
+  ///
+  /// In es, this message translates to:
+  /// **'El trazado se calcula siguiendo las calles entre los paraderos, en el orden de la lista.'**
+  String get routeTraceHint;
+
+  /// No description provided for @driversEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'Todavía no hay choferes registrados en tu garita.'**
+  String get driversEmpty;
+
+  /// No description provided for @driversEmptyHint.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrégales el código de garita para que se registren.'**
+  String get driversEmptyHint;
+
+  /// No description provided for @driverEnabled.
+  ///
+  /// In es, this message translates to:
+  /// **'Habilitado'**
+  String get driverEnabled;
+
+  /// No description provided for @driverDisabled.
+  ///
+  /// In es, this message translates to:
+  /// **'Deshabilitado'**
+  String get driverDisabled;
+
+  /// No description provided for @driverInService.
+  ///
+  /// In es, this message translates to:
+  /// **'En servicio'**
+  String get driverInService;
+
+  /// No description provided for @driverEnableHelp.
+  ///
+  /// In es, this message translates to:
+  /// **'Un chofer deshabilitado no puede iniciar turno ni transmitir su posición.'**
+  String get driverEnableHelp;
+
+  /// No description provided for @driversNoPasswordReset.
+  ///
+  /// In es, this message translates to:
+  /// **'No se pueden restablecer contraseñas desde la app: la patente no es un correo real. Si un chofer pierde la suya, deshabilita su cuenta y entrégale un código nuevo para que se registre otra vez.'**
+  String get driversNoPasswordReset;
+
+  /// No description provided for @driverSaved.
+  ///
+  /// In es, this message translates to:
+  /// **'Cambios guardados.'**
+  String get driverSaved;
+
+  /// No description provided for @welcomeTitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Te damos la bienvenida'**
+  String get welcomeTitle;
+
+  /// No description provided for @welcomeSubtitle.
+  ///
+  /// In es, this message translates to:
+  /// **'Rutas, paraderos y colectivos en vivo de Transportes Serrano, Quilpué.'**
+  String get welcomeSubtitle;
+
+  /// No description provided for @welcomeQuestion.
+  ///
+  /// In es, this message translates to:
+  /// **'¿Cómo vas a usar ColeTotal?'**
+  String get welcomeQuestion;
+
+  /// No description provided for @welcomeGuestDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Consulta el mapa, busca paraderos y mira dónde vienen los colectivos. Sin cuenta y sin registro.'**
+  String get welcomeGuestDesc;
+
+  /// No description provided for @welcomeDriverDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Comparte tu posición con los pasajeros durante tu turno. Necesitas el código de tu garita.'**
+  String get welcomeDriverDesc;
+
+  /// No description provided for @welcomeAdminDesc.
+  ///
+  /// In es, this message translates to:
+  /// **'Gestiona paraderos, recorridos y choferes, y supervisa la flota en vivo.'**
+  String get welcomeAdminDesc;
+
+  /// No description provided for @welcomeContinueGuest.
+  ///
+  /// In es, this message translates to:
+  /// **'Entrar como invitado'**
+  String get welcomeContinueGuest;
+
+  /// No description provided for @welcomeChangeLater.
+  ///
+  /// In es, this message translates to:
+  /// **'Puedes iniciar sesión cuando quieras desde el menú lateral.'**
+  String get welcomeChangeLater;
 }
 
 class _AppLocalizationsDelegate

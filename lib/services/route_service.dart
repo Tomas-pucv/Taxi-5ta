@@ -20,22 +20,9 @@ class RouteResult {
     required this.provider,
   });
 
-  String get distanceLabel {
-    if (distanceMeters <= 0) return '—';
-    if (distanceMeters >= 1000) {
-      return '${(distanceMeters / 1000).toStringAsFixed(2)} km';
-    }
-    return '${distanceMeters.toStringAsFixed(0)} m';
-  }
-
-  String get durationLabel {
-    final minutes = (durationSeconds / 60).round();
-    if (minutes <= 0) return '—';
-    if (minutes < 60) return '$minutes min';
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    return m == 0 ? '$h h' : '$h h $m min';
-  }
+  // El formateo de distancia y duración vive en `utils/distance_format.dart`,
+  // que además localiza las unidades. Tenerlo acá obligaba a que el servicio
+  // conociera el idioma y duplicaba la lógica que ya existía en las pantallas.
 }
 
 /// Servicio de ruteo.
@@ -99,6 +86,30 @@ class RouteService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Vuelve a resolver el destino contra la lista viva de paraderos.
+  ///
+  /// El destino se guarda **por valor**, así que si el administrador mueve o da
+  /// de baja el paradero que el pasajero tiene seleccionado, la polilínea
+  /// seguiría apuntando a un fantasma: al punto viejo, con el nombre viejo. Se
+  /// llama desde `main()` cada vez que cambian los paraderos.
+  void refreshDestination(BusStop? Function(String id) resolve) {
+    final current = _destination;
+    if (current == null) return;
+
+    final fresh = resolve(current.id);
+    if (fresh == null) {
+      // El paradero ya no existe: mejor cerrar la ruta que dibujarla hacia un
+      // lugar que la garita eliminó.
+      clearDestination();
+      return;
+    }
+    if (fresh.location == current.location && fresh.name == current.name) {
+      return;
+    }
+    _destination = fresh;
+    notifyListeners();
+  }
+
   Future<String> _resolveApiKey() async {
     // 1) Compile-time (preferido): --dart-define=ORS_API_KEY=xxx
     const compileKey = String.fromEnvironment('ORS_API_KEY', defaultValue: '');
@@ -114,7 +125,7 @@ class RouteService extends ChangeNotifier {
   Future<bool> fetchRoute(LatLng origin, BusStop dest) async {
     // No llamar a las APIs si el origen o el destino son inválidos.
     if (!_isValidLatLng(origin) || !_isValidLatLng(dest.location)) {
-      _lastError = 'Origen o destino inválido (coordenadas fuera de rango).';
+      _lastError = 'invalid_coords';
       _loadingRoute = false;
       _routePoints = [];
       _routeInfo = null;
@@ -141,7 +152,7 @@ class RouteService extends ChangeNotifier {
       if (okOsm) return true;
 
       // Si llegamos acá, todo falló.
-      _lastError ??= 'No se pudo obtener la ruta. Verifica tu conexión.';
+      _lastError ??= 'no_route';
       _loadingRoute = false;
       _routePoints = [];
       _routeInfo = null;
@@ -149,7 +160,7 @@ class RouteService extends ChangeNotifier {
       return false;
     } catch (e, st) {
       debugPrint('fetchRoute error: $e\n$st');
-      _lastError = 'Ocurrió un error al calcular la ruta.';
+      _lastError = 'generic_error';
       _loadingRoute = false;
       _routePoints = [];
       _routeInfo = null;

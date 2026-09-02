@@ -1,9 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+
+import 'package:taxi1/l10n/app_localizations.dart';
 import 'package:taxi1/models/bus_stop.dart';
-import 'package:taxi1/services/route_service.dart';
 import 'package:taxi1/screens/main_screen.dart';
+import 'package:taxi1/services/route_service.dart';
+import 'package:taxi1/services/stop_history_service.dart';
+import 'package:taxi1/services/stops_service.dart';
+import 'package:taxi1/theme/app_colors.dart';
+import 'package:taxi1/theme/app_spacing.dart';
+import 'package:taxi1/theme/breakpoints.dart';
+import 'package:taxi1/utils/distance_format.dart';
+import 'package:taxi1/utils/route_error.dart';
+import 'package:taxi1/widgets/metric_chip.dart';
+import 'package:taxi1/widgets/settings_section.dart';
+import 'package:taxi1/widgets/state_views.dart';
+
+/// Resultado de intentar obtener la ubicación del usuario.
+enum _LocationState {
+  loading,
+  ready,
+  serviceDisabled,
+  permissionDenied,
+  failed,
+}
 
 class RoutesScreen extends StatefulWidget {
   const RoutesScreen({super.key});
@@ -14,147 +35,160 @@ class RoutesScreen extends StatefulWidget {
 
 class _RoutesScreenState extends State<RoutesScreen> {
   LatLng? _currentPosition;
-  bool _loadingLocation = true;
+  _LocationState _locationState = _LocationState.loading;
   bool _fetchingRoute = false;
   List<BusStop> _sortedStops = [];
   String _searchQuery = '';
 
   final routeService = RouteService.instance;
+  final history = StopHistoryService.instance;
+  final stopsService = StopsService.instance;
   final _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    routeService.addListener(_onRouteChanged);
+    routeService.addListener(_onChanged);
+    history.addListener(_onChanged);
+    // Los paraderos son datos vivos: el administrador puede agregar o dar de
+    // baja uno mientras esta pantalla está abierta.
+    stopsService.addListener(_onStopsChanged);
+    history.load();
     _initLocation();
   }
 
   @override
   void dispose() {
-    routeService.removeListener(_onRouteChanged);
+    routeService.removeListener(_onChanged);
+    history.removeListener(_onChanged);
+    stopsService.removeListener(_onStopsChanged);
     _searchController.dispose();
     super.dispose();
   }
 
-  void _onRouteChanged() {
+  void _onChanged() {
     if (mounted) setState(() {});
   }
 
   Future<void> _initLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return setState(() => _loadingLocation = false);
+    // Los paraderos se muestran igual aunque no haya GPS: StopsService ya trae
+    // la semilla local aunque Firestore todavía no haya respondido.
+    // Lo que cambia es que sin posición no se puede afirmar cercanía, y antes
+    // la pantalla resolvía eso poniendo `0.0` metros, con lo que *todos* los
+    // paraderos aparecían como "0 m — Muy cerca".
+    _sortedStops = _sortStops(stopsService.stops);
 
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
-    if (permission == LocationPermission.deniedForever) {
-      return setState(() => _loadingLocation = false);
-    }
-
+    // Todo el bloque va en try/catch: en plataformas donde geolocator no está
+    // implementado (Windows, web) la primera llamada lanza y, sin esto, el
+    // estado se quedaba en `loading` para siempre — un spinner infinito.
     try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return _finishLocation(_LocationState.serviceDisabled);
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return _finishLocation(_LocationState.permissionDenied);
+      }
+
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
         ),
       );
-      // Filtrar posiciones inválidas (NaN o 0,0 — común en emuladores).
       final lat = position.latitude;
       final lng = position.longitude;
-      if (lat.isFinite && lng.isFinite && !(lat == 0.0 && lng == 0.0)) {
-        _currentPosition = LatLng(lat, lng);
-        routeService.setOrigin(_currentPosition!);
+      // Filtrar posiciones inválidas (NaN o 0,0 — común en emuladores).
+      if (!lat.isFinite || !lng.isFinite || (lat == 0.0 && lng == 0.0)) {
+        return _finishLocation(_LocationState.failed);
       }
 
-      _sortedStops = List.from(quilpueBusStops);
-      if (_currentPosition != null) {
-        _sortedStops.sort(
-          (a, b) => a
-              .distanceFrom(_currentPosition!)
-              .compareTo(b.distanceFrom(_currentPosition!)),
-        );
-      }
+      _currentPosition = LatLng(lat, lng);
+      routeService.setOrigin(_currentPosition!);
+      _sortedStops = _sortStops(stopsService.stops);
+      _finishLocation(_LocationState.ready);
     } catch (_) {
-      // Si falla la ubicación, igual mostramos los paraderos sin ordenar.
-      _sortedStops = List.from(quilpueBusStops);
+      _finishLocation(_LocationState.failed);
     }
+  }
 
-    if (mounted) setState(() => _loadingLocation = false);
+  /// Copia la lista y la ordena por cercanía si hay posición conocida.
+  ///
+  /// Antes esto se hacía una sola vez, sobre una constante. Con los paraderos
+  /// viniendo de Firestore la lista cambia mientras la pantalla está abierta,
+  /// así que ordenar tiene que ser una función y no un efecto secundario del
+  /// arranque: si no, un paradero recién creado por el administrador no
+  /// aparecería hasta reabrir la pestaña.
+  List<BusStop> _sortStops(List<BusStop> source) {
+    final sorted = List.of(source);
+    final position = _currentPosition;
+    if (position != null) {
+      sorted.sort(
+        (a, b) =>
+            a.distanceFrom(position).compareTo(b.distanceFrom(position)),
+      );
+    }
+    return sorted;
+  }
+
+  void _onStopsChanged() {
+    if (!mounted) return;
+    setState(() => _sortedStops = _sortStops(stopsService.stops));
+  }
+
+  void _finishLocation(_LocationState state) {
+    if (!mounted) return;
+    setState(() => _locationState = state);
+  }
+
+  Future<void> _retryLocation() async {
+    setState(() => _locationState = _LocationState.loading);
+    await _initLocation();
   }
 
   /// Selección + cálculo de ruta + cambio de tab al mapa.
-  /// Antes solo seteaba el destino y abría un MapScreen nuevo, lo que
-  /// dejaba la polilínea vacía y el mapa dibujaba una línea recta.
   Future<void> _selectStop(BusStop stop) async {
     if (_fetchingRoute) return;
+    final l10n = AppLocalizations.of(context)!;
 
     if (_currentPosition != null) {
       routeService.setOrigin(_currentPosition!);
     }
     routeService.setDestination(stop);
 
-    // Si no tenemos origen válido, no podemos pedir la ruta.
     final origin = routeService.origin;
     if (origin == null ||
         !origin.latitude.isFinite ||
         !origin.longitude.isFinite) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Tu ubicación aún no está disponible. Activá el GPS o esperá '
-            'unos segundos.',
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
       routeService.clearDestination();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.locationUnavailable)));
       return;
     }
 
     setState(() => _fetchingRoute = true);
-
     final ok = await routeService.fetchRoute(origin, stop);
-
     if (!mounted) return;
     setState(() => _fetchingRoute = false);
 
     if (ok) {
+      // Da contenido real a la preferencia "Guardar historial".
+      history.record(stop);
       // Cambiar de tab (no Navigator.push) para preservar el estado del mapa.
       MainNavigationController.instance.showMap();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            routeService.lastError ??
-                'No se pudo calcular la ruta. Inténtalo de nuevo.',
-          ),
-          behavior: SnackBarBehavior.floating,
+          content: Text(routeErrorMessage(routeService.lastError, l10n)),
         ),
       );
     }
-  }
-
-  String _distanceLabel(double meters) {
-    if (meters >= 1000) {
-      return '${(meters / 1000).toStringAsFixed(2)} km';
-    }
-    return '${meters.toStringAsFixed(0)} m';
-  }
-
-  /// Etiqueta de cercanía para los chips.
-  String _closenessLabel(double meters) {
-    if (meters < 500) return 'Muy cerca';
-    if (meters < 1500) return 'Cerca';
-    if (meters < 3000) return 'A media distancia';
-    return 'Lejos';
-  }
-
-  Color _closenessColor(double meters, ColorScheme scheme) {
-    if (meters < 500) return Colors.green;
-    if (meters < 1500) return scheme.primary;
-    if (meters < 3000) return Colors.orange;
-    return Colors.red.shade400;
   }
 
   List<BusStop> get _filteredStops {
@@ -169,124 +203,242 @@ class _RoutesScreenState extends State<RoutesScreen> {
         .toList();
   }
 
+  double? _metersTo(BusStop stop) =>
+      _currentPosition == null ? null : stop.distanceFrom(_currentPosition!);
+
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    final stops = _filteredStops;
+    final searching = _searchQuery.isNotEmpty;
+    final recents = history.recentStops;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Calcular Ruta')),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Origen
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextField(
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: 'Origen (Mi ubicación actual)',
-                prefixIcon: const Icon(Icons.my_location),
-                border: const OutlineInputBorder(),
-                hintText: _currentPosition != null
-                    ? 'Lat: ${_currentPosition!.latitude.toStringAsFixed(5)}, '
-                          'Lng: ${_currentPosition!.longitude.toStringAsFixed(5)}'
-                    : 'Buscando ubicación…',
-              ),
-            ),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: Breakpoints.maxContentWidth,
           ),
+          child: Column(
+            children: [
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverAppBar.large(
+                      title: Text(l10n.calculateRouteTitle),
+                      // Con Scaffolds anidados Flutter no detecta solo que haya
+                      // un drawer más arriba: el botón de menú va explícito.
+                      leading: IconButton(
+                        icon: const Icon(Icons.menu),
+                        tooltip: l10n.openMenu,
+                        onPressed: MainNavigationController.instance.openDrawer,
+                      ),
+                      actions: [
+                        // Acceso directo a Preferencias: antes había que ir a
+                        // la tercera pestaña a mano.
+                        IconButton(
+                          icon: const Icon(Icons.tune),
+                          tooltip: l10n.preferencesTitle,
+                          onPressed: () => MainNavigationController.instance
+                              .openPreferences(context),
+                        ),
+                      ],
+                    ),
+                    SliverToBoxAdapter(child: _header(l10n)),
+                    if (_locationNotice(l10n) case final notice?)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            0,
+                            AppSpacing.lg,
+                            AppSpacing.md,
+                          ),
+                          child: notice,
+                        ),
+                      ),
 
-          // Buscador
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Buscar paradero por nombre o dirección…',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
+                    if (_locationState == _LocationState.loading)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: LoadingView(message: l10n.searchingLocation),
                       )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: scheme.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
+                    else if (stops.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: StatusMessageView(
+                          icon: Icons.search_off,
+                          title: l10n.noResults(_searchQuery),
+                          message: l10n.noResultsHint,
+                        ),
+                      )
+                    else ...[
+                      // El historial solo tiene sentido al explorar; durante
+                      // una búsqueda activa estorbaría los resultados.
+                      if (recents.isNotEmpty && !searching) ...[
+                        SliverToBoxAdapter(
+                          child: _recentsSection(l10n, recents),
+                        ),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: AppSpacing.xl),
+                        ),
+                      ],
+                      SliverToBoxAdapter(
+                        child: SettingsSection(
+                          icon: Icons.directions_bus_outlined,
+                          title: searching ? l10n.whereToGo : l10n.allStops,
+                          children: const [],
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.lg,
+                          0,
+                          AppSpacing.lg,
+                          AppSpacing.lg,
+                        ),
+                        sliver: SliverList.separated(
+                          itemCount: stops.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppSpacing.sm),
+                          itemBuilder: (context, index) {
+                            final stop = stops[index];
+                            return _StopTile(
+                              stop: stop,
+                              meters: _metersTo(stop),
+                              onTap: () => _selectStop(stop),
+                              showLoading:
+                                  _fetchingRoute &&
+                                  routeService.destination == stop,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              onChanged: (value) => setState(() => _searchQuery = value),
-            ),
+              _nearestStopButton(l10n),
+            ],
           ),
+        ),
+      ),
+    );
+  }
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Text(
-              '¿A dónde quieres ir?',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
-
-          if (_loadingLocation)
-            const Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else
-            Expanded(
-              child: _filteredStops.isEmpty
-                  ? Center(
-                      child: Text(
-                        'Sin resultados para "$_searchQuery"',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+  Widget _header(AppLocalizations l10n) {
+    // Ambos campos heredan radio, relleno y bordes del `inputDecorationTheme`.
+    // Antes uno tenía radio 4 y el otro 12, con rellenos distintos.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            readOnly: true,
+            decoration: InputDecoration(
+              labelText: l10n.originLabel,
+              prefixIcon: const Icon(Icons.my_location),
+              hintText: _currentPosition != null
+                  ? l10n.coordsLabel(
+                      _currentPosition!.latitude.toStringAsFixed(5),
+                      _currentPosition!.longitude.toStringAsFixed(5),
                     )
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      itemCount: _filteredStops.length,
-                      itemBuilder: (context, index) {
-                        final stop = _filteredStops[index];
-                        final distMeters = _currentPosition != null
-                            ? stop.distanceFrom(_currentPosition!)
-                            : 0.0;
-                        final isFetchingThis =
-                            _fetchingRoute && routeService.destination == stop;
-                        return _StopTile(
-                          stop: stop,
-                          distanceMeters: distMeters,
-                          distanceLabel: _distanceLabel(distMeters),
-                          closenessLabel: _closenessLabel(distMeters),
-                          closenessColor: _closenessColor(distMeters, scheme),
-                          onTap: () => _selectStop(stop),
-                          showLoading: isFetchingThis,
-                        );
+                  : l10n.searchingLocation,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _searchController,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: l10n.searchStopHint,
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.clear),
+                      tooltip: l10n.cancel,
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
                       },
                     ),
             ),
-
-          // Acción: paradero más cercano
-          if (!_loadingLocation && _sortedStops.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: FilledButton.tonalIcon(
-                onPressed: _fetchingRoute
-                    ? null
-                    : () => _selectStop(_sortedStops.first),
-                icon: const Icon(Icons.near_me),
-                label: const Text('Ir al paradero más cercano'),
-              ),
-            ),
+            onChanged: (value) => setState(() => _searchQuery = value),
+          ),
         ],
+      ),
+    );
+  }
+
+  /// Paraderos consultados recientemente, como chips de acceso rápido.
+  Widget _recentsSection(AppLocalizations l10n, List<BusStop> recents) {
+    return SettingsSection(
+      icon: Icons.history,
+      title: l10n.recentStops,
+      children: [
+        Padding(
+          padding: AppSpacing.pageHorizontal,
+          child: Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final stop in recents)
+                ActionChip(
+                  avatar: const Icon(Icons.history, size: 18),
+                  label: Text(stop.name),
+                  onPressed: _fetchingRoute ? null : () => _selectStop(stop),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Aviso en línea cuando no hay posición: la lista sigue siendo útil, pero el
+  /// usuario tiene que saber por qué no está ordenada por cercanía.
+  Widget? _locationNotice(AppLocalizations l10n) {
+    final message = switch (_locationState) {
+      _LocationState.serviceDisabled => l10n.locationOffMessage,
+      _LocationState.permissionDenied => l10n.locationDeniedMessage,
+      _LocationState.failed => l10n.enableLocationForSorting,
+      _ => null,
+    };
+    if (message == null) return null;
+
+    return InlineNotice(
+      icon: Icons.location_off_outlined,
+      message: message,
+      actionLabel: l10n.retry,
+      onAction: _retryLocation,
+    );
+  }
+
+  Widget _nearestStopButton(AppLocalizations l10n) {
+    // Sin posición no existe "el más cercano": la lista está sin ordenar y el
+    // botón elegiría un paradero arbitrario.
+    if (_currentPosition == null || _sortedStops.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: FilledButton.icon(
+          onPressed: _fetchingRoute
+              ? null
+              : () => _selectStop(_sortedStops.first),
+          icon: const Icon(Icons.near_me),
+          label: Text(l10n.goToNearestStop),
+        ),
       ),
     );
   }
@@ -295,114 +447,90 @@ class _RoutesScreenState extends State<RoutesScreen> {
 class _StopTile extends StatelessWidget {
   const _StopTile({
     required this.stop,
-    required this.distanceMeters,
-    required this.distanceLabel,
-    required this.closenessLabel,
-    required this.closenessColor,
+    required this.meters,
     required this.onTap,
     required this.showLoading,
   });
 
   final BusStop stop;
-  final double distanceMeters;
-  final String distanceLabel;
-  final String closenessLabel;
-  final Color closenessColor;
+
+  /// `null` cuando no se conoce la posición del usuario.
+  final double? meters;
   final VoidCallback onTap;
   final bool showLoading;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
+    final status = AppStatusColors.of(context);
+
+    final bucket = proximityOf(meters);
+    final color = proximityColor(bucket, status);
+    final closeness = proximityLabel(bucket, l10n);
+
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
         onTap: showLoading ? null : onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             children: [
-              // Punto de color según cercanía.
+              // Punto de cercanía sobre un fondo teñido: se lee como un
+              // indicador de estado y no como una viñeta suelta.
               Container(
-                width: 12,
-                height: 12,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: closenessColor,
+                  color: color.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
+                child: Icon(Icons.directions_bus, size: 20, color: color),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      stop.name,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text(stop.name, style: theme.textTheme.titleSmall),
                     const SizedBox(height: 2),
                     Text(
                       stop.address,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.straighten,
-                        size: 14,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        distanceLabel,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: closenessColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      closenessLabel,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: closenessColor,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (showLoading) ...[
-                const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.sm),
+              if (showLoading)
                 const SizedBox(
-                  width: 18,
-                  height: 18,
+                  width: 20,
+                  height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else if (closeness == null)
+                // Sin ubicación no se inventa una distancia.
+                Text(
+                  l10n.distanceUnavailable,
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      formatDistance(meters, l10n),
+                      style: theme.textTheme.labelLarge,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    MetricChip(label: closeness, color: color),
+                  ],
                 ),
-              ],
             ],
           ),
         ),

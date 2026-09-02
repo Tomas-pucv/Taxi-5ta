@@ -1,0 +1,25 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "colectivos_activos": {
+      ".read": true,
+
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['uid', 'latitud', 'longitud', 'estado'])",
+
+        "uid": { ".validate": "newData.isString() && newData.val() === $uid" },
+        "idVehiculo": { ".validate": "newData.isString() && newData.val().length <= 12" },
+        "garitaId": { ".validate": "newData.isString() && newData.val().length <= 64" },
+        "latitud": { ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90" },
+        "longitud": { ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180" },
+        "estado": { ".validate": "newData.isString() && newData.val().matches(/^(disponible|medioLleno|lleno)$/)" },
+        "ts": { ".validate": "newData.isNumber()" },
+
+        "$otro": { ".validate": false }
+      }
+    }
+  }
+}

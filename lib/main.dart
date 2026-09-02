@@ -1,25 +1,63 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'package:taxi1/firebase_options.dart';
 import 'package:taxi1/l10n/app_localizations.dart';
 import 'package:taxi1/screens/main_screen.dart';
+import 'package:taxi1/services/auth_service.dart';
+import 'package:taxi1/services/garita_service.dart';
 import 'package:taxi1/services/preferences_service.dart';
+import 'package:taxi1/services/route_service.dart';
+import 'package:taxi1/services/turno_service.dart';
+import 'package:taxi1/services/stop_history_service.dart';
+import 'package:taxi1/services/stops_service.dart';
+import 'package:taxi1/theme/app_text_scaler.dart';
+import 'package:taxi1/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Caché offline explícita (RF-07-01): los paraderos y recorridos tienen que
+  // verse en los tramos sin cobertura de los cerros de Quilpué.
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
-  // Inicializa Firebase (descomenta la línea de abajo cuando tengas el
-  // google-services.json configurado):
-  // await Firebase.initializeApp();
-  
+  // Antes que las preferencias: el rol decide qué pantallas existen, así que
+  // la primera construcción del árbol ya tiene que conocerlo.
+  await AuthService.instance.init();
+
+  // Engancha el turno a la sesión: cerrar sesión tiene que detener la
+  // telemetría ANTES de perder el token, o el nodo del vehículo queda colgado
+  // en el mapa de todos los pasajeros.
+  TurnoService.instance.bind();
+
+  // Los datos de la garita sólo se escuchan cuando hay un administrador en
+  // sesión: un listener abierto contra datos que el usuario ya no puede leer
+  // sólo produce errores de reglas.
+  GaritaService.instance.bind();
 
   await PreferencesService.instance.load();
+
+  // El listener de paraderos va aparte de la siembra: la lista ya trae los
+  // paraderos semilla desde el constructor, así que la app dibuja algo en el
+  // primer frame aunque Firestore tarde o no responda.
+  StopsService.instance.startListening();
+
+  // Si el administrador mueve o da de baja el paradero que el pasajero tiene
+  // como destino, la ruta dibujada apuntaría a un fantasma.
+  StopsService.instance.addListener(
+    () => RouteService.instance.refreshDestination(StopsService.instance.byId),
+  );
+
+  // Después de StopsService: el historial guarda ids y los resuelve contra él.
+  await StopHistoryService.instance.load();
+
   runApp(const ColeTotalApp());
 }
 
@@ -33,6 +71,11 @@ class ColeTotalApp extends StatefulWidget {
 class _ColeTotalAppState extends State<ColeTotalApp> {
   final prefs = PreferencesService.instance;
 
+  /// `ColorScheme.fromSeed` hace un cálculo de color no trivial y este widget
+  /// se reconstruye ante *cualquier* cambio de preferencia, así que el tema se
+  /// memoiza por (brillo, densidad) en vez de recalcularse cada vez.
+  final Map<(Brightness, bool), ThemeData> _themeCache = {};
+
   @override
   void initState() {
     super.initState();
@@ -45,137 +88,22 @@ class _ColeTotalAppState extends State<ColeTotalApp> {
     super.dispose();
   }
 
-  void _onPrefsChanged() => setState(() {});
-
-  ThemeData _buildLightTheme() {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: Colors.blue,
-      brightness: Brightness.light,
-    );
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      scaffoldBackgroundColor: scheme.surface,
-      colorScheme: scheme,
-      appBarTheme: AppBarTheme(
-        centerTitle: false,
-        backgroundColor: scheme.surface,
-        foregroundColor: scheme.onSurface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        // Barra del sistema (iconos y fondo) contrastando con tema claro:
-        // fondo claro, iconos oscuros.
-        systemOverlayStyle: SystemUiOverlayStyle.dark.copyWith(
-          systemNavigationBarColor: scheme.surface,
-          systemNavigationBarIconBrightness: Brightness.dark,
-          statusBarColor: Colors.transparent,
-        ),
-      ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: scheme.surface,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        // El indicador usa secondaryContainer: el icono seleccionado cae
-        // automáticamente a onSecondaryContainer => buen contraste en ambos temas.
-        backgroundColor: scheme.surface,
-        surfaceTintColor: Colors.transparent,
-        indicatorColor: scheme.secondaryContainer,
-        elevation: 0,
-        height: 72,
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return TextStyle(
-            fontSize: 12 * prefs.fontSizeMultiplier,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
-          );
-        }),
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return IconThemeData(
-            size: 24,
-            color: selected ? scheme.onSecondaryContainer : scheme.onSurfaceVariant,
-          );
-        }),
-      ),
-    );
+  void _onPrefsChanged() {
+    if (mounted) setState(() {});
   }
 
-  ThemeData _buildDarkTheme() {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: Colors.blue,
-      brightness: Brightness.dark,
-    );
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: scheme,
-      scaffoldBackgroundColor: scheme.surface,
-      appBarTheme: AppBarTheme(
-        centerTitle: false,
-        backgroundColor: scheme.surface,
-        foregroundColor: scheme.onSurface,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        // Barra del sistema (iconos y fondo) contrastando con tema oscuro:
-        // fondo oscuro, iconos claros.
-        systemOverlayStyle: SystemUiOverlayStyle.light.copyWith(
-          systemNavigationBarColor: scheme.surface,
-          systemNavigationBarIconBrightness: Brightness.light,
-          statusBarColor: Colors.transparent,
-        ),
-      ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: scheme.surface,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: scheme.surface,
-        surfaceTintColor: Colors.transparent,
-        indicatorColor: scheme.secondaryContainer,
-        elevation: 0,
-        height: 72,
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return TextStyle(
-            fontSize: 12 * prefs.fontSizeMultiplier,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
-          );
-        }),
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected);
-          return IconThemeData(
-            size: 24,
-            color: selected ? scheme.onSecondaryContainer : scheme.onSurfaceVariant,
-          );
-        }),
-      ),
-    );
-  }
+  ThemeData _theme(Brightness brightness) => _themeCache.putIfAbsent((
+    brightness,
+    prefs.compactMode,
+  ), () => buildAppTheme(brightness: brightness, compact: prefs.compactMode));
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'ColeTotal',
       debugShowCheckedModeBanner: false,
-      theme: _buildLightTheme(),
-      darkTheme: _buildDarkTheme(),
+      theme: _theme(Brightness.light),
+      darkTheme: _theme(Brightness.dark),
       themeMode: prefs.themeMode,
       localizationsDelegates: const [
         AppLocalizations.delegate,
@@ -183,15 +111,27 @@ class _ColeTotalAppState extends State<ColeTotalApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('es'),
-      ],
-      home: const MainScreen(),
-      routes: {
-        '/main': (context) => const MainScreen(),
-        // '/login': (context) => const LoginScreen(),
+
+      // Una sola fuente de verdad. Antes acá se declaraba `[Locale('en'),
+      // Locale('es')]` mientras el delegate solo soporta `es`: en un teléfono
+      // en inglés, Flutter resolvía a `en`, el delegate no cargaba y
+      // `AppLocalizations.of(context)!` reventaba al abrir la app.
+      supportedLocales: AppLocalizations.supportedLocales,
+
+      // El ajuste de tamaño de fuente se aplica una vez, acá, y así alcanza a
+      // todas las pantallas. Antes se multiplicaba a mano en cada `TextStyle`,
+      // por lo que Mapa y Rutas lo ignoraban por completo.
+      builder: (context, child) {
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(
+            textScaler: AppTextScaler(mq.textScaler, prefs.fontSizeMultiplier),
+          ),
+          child: child!,
+        );
       },
+
+      home: const MainScreen(),
     );
   }
 }

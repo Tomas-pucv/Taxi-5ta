@@ -1,0 +1,297 @@
+import 'package:flutter/material.dart';
+
+import 'package:taxi1/l10n/app_localizations.dart';
+import 'package:taxi1/models/app_user.dart';
+import 'package:taxi1/models/colectivo_activo.dart';
+import 'package:taxi1/screens/main_screen.dart';
+import 'package:taxi1/services/auth_service.dart';
+import 'package:taxi1/services/turno_service.dart';
+import 'package:taxi1/theme/app_colors.dart';
+import 'package:taxi1/theme/app_spacing.dart';
+import 'package:taxi1/theme/breakpoints.dart';
+import 'package:taxi1/utils/patente.dart';
+import 'package:taxi1/widgets/settings_section.dart';
+import 'package:taxi1/widgets/state_views.dart';
+
+/// Pantalla de jornada del colectivero — el "módulo conductor" del informe
+/// (§7.3.1-A).
+///
+/// Dos controles y nada más, porque quien la usa está manejando: un interruptor
+/// grande de turno y un selector de capacidad de un solo toque. Todo lo demás
+/// es información de confirmación, para que el chofer sepa sin dudar si está
+/// transmitiendo o no.
+class TurnoScreen extends StatefulWidget {
+  const TurnoScreen({super.key});
+
+  @override
+  State<TurnoScreen> createState() => _TurnoScreenState();
+}
+
+class _TurnoScreenState extends State<TurnoScreen> {
+  final _turno = TurnoService.instance;
+  final _auth = AuthService.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _turno.addListener(_onChanged);
+    _auth.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _turno.removeListener(_onChanged);
+    _auth.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final profile = _auth.profile;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.turnoTitle),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          tooltip: l10n.openMenu,
+          onPressed: MainNavigationController.instance.openDrawer,
+        ),
+      ),
+      body: profile == null || profile.rol != UserRole.colectivero
+          ? StatusMessageView(
+              icon: Icons.local_taxi_outlined,
+              title: l10n.turnoTitle,
+              message: l10n.turnoOnlyDrivers,
+            )
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: Breakpoints.maxContentWidth,
+                ),
+                child: ListView(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
+                  children: [
+                    const SizedBox(height: AppSpacing.md),
+                    _turnoCard(l10n),
+                    const SizedBox(height: AppSpacing.xl),
+                    if (_turno.enTurno) ...[
+                      _capacitySection(l10n),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+                    _vehicleSection(l10n, profile),
+                    const SizedBox(height: AppSpacing.xl),
+                    Padding(
+                      padding: AppSpacing.pageHorizontal,
+                      child: InlineNotice(
+                        icon: Icons.privacy_tip_outlined,
+                        message: l10n.turnoConsent,
+                        tone: StatusTone.neutral,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  /// El control principal. Ocupa una tarjeta entera y cambia de color: desde el
+  /// asiento del conductor tiene que poder leerse de un vistazo si se está
+  /// transmitiendo.
+  Widget _turnoCard(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final status = AppStatusColors.of(context);
+    final activo = _turno.enTurno;
+
+    return Padding(
+      padding: AppSpacing.pageHorizontal,
+      child: Card(
+        color: activo ? scheme.primaryContainer : scheme.surfaceContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    activo ? Icons.podcasts : Icons.pause_circle_outline,
+                    size: 32,
+                    color: activo ? status.disponible : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          activo ? l10n.turnoOn : l10n.turnoOff,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: activo
+                                ? scheme.onPrimaryContainer
+                                : scheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          activo ? l10n.turnoOnDesc : l10n.turnoOffDesc,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: activo
+                                ? scheme.onPrimaryContainer
+                                : scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton.icon(
+                onPressed: _turno.busy
+                    ? null
+                    : (activo ? _turno.terminarTurno : _turno.iniciarTurno),
+                style: activo
+                    ? FilledButton.styleFrom(
+                        backgroundColor: scheme.errorContainer,
+                        foregroundColor: scheme.onErrorContainer,
+                      )
+                    : null,
+                icon: _turno.busy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(activo ? Icons.stop : Icons.play_arrow),
+                label: Text(activo ? l10n.turnoEnd : l10n.turnoStart),
+              ),
+
+              if (_issueMessage(l10n) case final message?) ...[
+                const SizedBox(height: AppSpacing.md),
+                InlineNotice(
+                  icon: Icons.warning_amber_outlined,
+                  message: message,
+                  tone: StatusTone.warning,
+                ),
+              ],
+
+              if (activo) ...[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  _turno.ultimoEnvio == null
+                      ? l10n.turnoNoSignal
+                      : l10n.turnoLastSent(_formatHora(_turno.ultimoEnvio!)),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onPrimaryContainer,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Semaforización del informe §7.3.1-C.
+  ///
+  /// `SegmentedButton` y no un interruptor binario: sigue siendo un solo toque
+  /// —el mismo coste cognitivo que exige el informe— pero permite el estado
+  /// intermedio, que es el que hace útil el semáforo para el administrador.
+  Widget _capacitySection(AppLocalizations l10n) {
+    final status = AppStatusColors.of(context);
+
+    return SettingsSection(
+      icon: Icons.event_seat_outlined,
+      title: l10n.turnoCapacity,
+      children: [
+        Padding(
+          padding: AppSpacing.pageHorizontal,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SegmentedButton<EstadoCapacidad>(
+                selected: {_turno.estado},
+                onSelectionChanged: (s) => _turno.setEstado(s.first),
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                    value: EstadoCapacidad.disponible,
+                    icon: Icon(Icons.circle, size: 14, color: status.disponible),
+                    label: Text(l10n.capacityAvailable),
+                  ),
+                  ButtonSegment(
+                    value: EstadoCapacidad.medioLleno,
+                    icon: Icon(Icons.circle, size: 14, color: status.medioLleno),
+                    label: Text(l10n.capacityHalf),
+                  ),
+                  ButtonSegment(
+                    value: EstadoCapacidad.lleno,
+                    icon: Icon(Icons.circle, size: 14, color: status.lleno),
+                    label: Text(l10n.capacityFull),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                l10n.turnoCapacityHelp,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _vehicleSection(AppLocalizations l10n, AppUser profile) {
+    final theme = Theme.of(context);
+
+    return SettingsSection(
+      icon: Icons.directions_car_outlined,
+      title: l10n.turnoVehicle,
+      children: [
+        Padding(
+          padding: AppSpacing.pageHorizontal,
+          child: Card(
+            child: ListTile(
+              leading: const Icon(Icons.directions_car),
+              title: Text(
+                profile.patente == null
+                    ? profile.displayName
+                    : formatPatente(profile.patente!),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  letterSpacing: 1.5,
+                ),
+              ),
+              subtitle: Text(profile.displayName),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String? _issueMessage(AppLocalizations l10n) => switch (_turno.issue) {
+    TurnoIssue.none => null,
+    TurnoIssue.trackingDisabled => l10n.turnoIssueTracking,
+    TurnoIssue.cuentaInactiva => l10n.turnoIssueInactive,
+    TurnoIssue.ubicacionNoDisponible => l10n.turnoIssueLocation,
+  };
+
+  static String _formatHora(DateTime time) {
+    final h = time.hour.toString().padLeft(2, '0');
+    final m = time.minute.toString().padLeft(2, '0');
+    final s = time.second.toString().padLeft(2, '0');
+    return '$h:$m:$s';
+  }
+}
