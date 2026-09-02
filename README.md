@@ -1,4 +1,4 @@
-# Taxis 5ta Región 🚖
+# Coletotal 🚖
 
 Aplicación móvil desarrollada en Flutter para la gestión y visualización de servicios de taxi en la Quinta Región de Chile.
 
